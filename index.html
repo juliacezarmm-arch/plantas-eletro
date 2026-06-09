@@ -1,0 +1,1557 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EletroPlanta Studio</title>
+  <style>
+    :root {
+      --ink: #20242a;
+      --muted: #67707d;
+      --line: #d5dbe3;
+      --soft: #f4f6f8;
+      --panel: #ffffff;
+      --teal: #147c78;
+      --teal-2: #dff4f0;
+      --blue: #275d9f;
+      --amber: #b56b13;
+      --rose: #b23a48;
+      --green: #24744f;
+      --shadow: 0 16px 40px rgba(22, 31, 44, .12);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #eef2f5;
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      min-height: 34px;
+      border-radius: 6px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: #9fb0c2; background: #f8fafc; }
+    button.active { background: var(--teal-2); border-color: var(--teal); color: #075652; }
+    button.primary { background: var(--teal); border-color: var(--teal); color: white; }
+    button.danger { color: var(--rose); }
+
+    input,
+    select {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      min-height: 34px;
+      padding: 6px 8px;
+      background: white;
+      color: var(--ink);
+      width: 100%;
+    }
+
+
+    input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      min-height: 0;
+      padding: 0;
+      margin: 0;
+      flex: 0 0 auto;
+      accent-color: #147c78;
+    }
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .app {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      height: 100vh;
+    }
+
+    .titlebar {
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      background: #1f6f50;
+      color: white;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+    }
+
+    .brand-mark {
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      border: 2px solid rgba(255,255,255,.75);
+      position: relative;
+    }
+
+    .brand-mark:after {
+      content: "";
+      position: absolute;
+      width: 9px;
+      height: 2px;
+      background: #ffc857;
+      left: 5px;
+      top: 7px;
+      transform: rotate(-45deg);
+    }
+
+    .project-name {
+      opacity: .9;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .ribbon {
+      display: grid;
+      gap: 0;
+      background: #fafafa;
+      border-bottom: 1px solid #cfd6df;
+    }
+
+    .tabs {
+      display: flex;
+      align-items: center;
+      height: 34px;
+      padding: 0 12px;
+      gap: 4px;
+      background: #f7f9fb;
+      border-bottom: 1px solid #d8dee6;
+    }
+
+    .tab {
+      min-height: 28px;
+      border-radius: 6px 6px 0 0;
+      border: 0;
+      background: transparent;
+      padding: 5px 12px;
+    }
+
+    .tab.active {
+      background: white;
+      box-shadow: inset 0 3px 0 var(--teal);
+      color: #075652;
+    }
+
+    .toolbar {
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 5px 8px;
+      background: white;
+      overflow-x: auto;
+      overflow-y: hidden;
+      max-width: 100vw;
+    }
+
+    .tool-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0 8px;
+      border-right: 1px solid #dbe1e8;
+      flex: 0 0 auto;
+    }
+
+    .tool-stack {
+      display: grid;
+      grid-template-columns: repeat(3, 50px);
+      gap: 4px;
+    }
+
+    .tool {
+      width: 50px;
+      min-height: 42px;
+      display: grid;
+      justify-items: center;
+      align-content: center;
+      gap: 2px;
+      padding: 3px;
+      font-size: 9px;
+      line-height: 1.05;
+    }
+
+    .tool-icon {
+      width: 18px;
+      height: 18px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #9fb0c2;
+      border-radius: 4px;
+      color: var(--blue);
+      font-weight: 800;
+      background: #f9fbff;
+      font-size: 10px;
+    }
+
+    .mini-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 92px);
+      gap: 5px;
+    }
+
+    .check-grid {
+      display: grid;
+      grid-template-columns: repeat(3, max-content);
+      gap: 6px 10px;
+      color: #44505d;
+      font-size: 11px;
+      align-items: center;
+    }
+
+    .check-grid label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #44505d;
+      white-space: nowrap;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+      min-height: 0;
+      min-width: 0;
+    }
+
+    .canvas-shell {
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+      background:
+        linear-gradient(#e5eaf0 1px, transparent 1px),
+        linear-gradient(90deg, #e5eaf0 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .canvas-top {
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      border-bottom: 1px solid #d7dee7;
+      background: rgba(255,255,255,.9);
+      position: relative;
+      z-index: 2;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .stage-wrap {
+      height: calc(100% - 34px);
+      overflow: auto;
+      padding: 24px;
+    }
+
+    .sheet {
+      width: min(1122px, calc(100vw - 390px));
+      min-width: 680px;
+      aspect-ratio: 1122 / 794;
+      height: auto;
+      margin: 0 auto;
+      background: white;
+      border: 1px solid #aeb8c4;
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+
+    #drawing {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #fff;
+    }
+
+    .side {
+      min-height: 0;
+      border-left: 1px solid #cfd6df;
+      background: #f8fafc;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .side-head {
+      padding: 14px;
+      border-bottom: 1px solid #dbe1e8;
+      background: white;
+    }
+
+    .side-head h2 {
+      margin: 0;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    .side-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .side-body {
+      overflow: auto;
+      padding: 14px;
+      display: grid;
+      align-content: start;
+      gap: 14px;
+    }
+
+    .panel {
+      border: 1px solid #dbe1e8;
+      background: white;
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .panel-title {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e3e8ef;
+      font-weight: 700;
+      font-size: 13px;
+      background: #fbfcfe;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .panel-body {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .cols-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .cols-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .list {
+      display: grid;
+      gap: 6px;
+      max-height: 190px;
+      overflow: auto;
+    }
+
+    .row-card {
+      border: 1px solid #e0e6ee;
+      border-radius: 6px;
+      padding: 8px;
+      background: #fff;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    .row-card strong { font-size: 13px; }
+    .row-card span { color: var(--muted); }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .table th,
+    .table td {
+      border-bottom: 1px solid #e3e8ef;
+      text-align: left;
+      padding: 6px 4px;
+    }
+
+    .table th {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .dialog-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 27, 36, .18);
+      z-index: 10;
+      display: none;
+      place-items: center;
+    }
+
+    .dialog-backdrop.open { display: grid; }
+
+    .dialog {
+      width: min(760px, calc(100vw - 40px));
+      background: white;
+      border: 1px solid #cfd6df;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .dialog-head {
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      border-bottom: 3px solid #49aaa4;
+    }
+
+    .dialog-title {
+      font-weight: 700;
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    .dialog-body {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+      background: #fcfbff;
+    }
+
+    .shape-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 42px);
+      gap: 8px;
+      align-content: start;
+    }
+
+    .shape-btn {
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+    }
+
+    .shape-icon {
+      width: 28px;
+      height: 28px;
+      border: 3px solid #7d8792;
+      background: #fdfdfd;
+    }
+
+    .shape-icon.l {
+      clip-path: polygon(0 0, 58% 0, 58% 45%, 100% 45%, 100% 100%, 0 100%);
+      background: #7d8792;
+      border: 0;
+    }
+
+    .shape-btn.active {
+      border-color: var(--teal);
+      background: var(--teal-2);
+    }
+
+    .field-hidden {
+      display: none;
+    }
+
+    .dialog-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 16px;
+    }
+
+    .preview-box {
+      min-height: 170px;
+      border: 1px solid #dde3eb;
+      border-radius: 6px;
+      background: white;
+      display: grid;
+      place-items: center;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid #e3e8ef;
+      background: white;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      background: #17202b;
+      color: white;
+      padding: 10px 14px;
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+      z-index: 20;
+      font-size: 13px;
+    }
+
+    .toast.show { opacity: 1; }
+    @media (max-width: 900px) {
+      .workspace {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr) 320px;
+      }
+
+      .side {
+        border-left: 0;
+        border-top: 1px solid #cfd6df;
+      }
+
+      .side-body {
+        grid-template-columns: repeat(2, minmax(260px, 1fr));
+        overflow: auto;
+      }
+
+      .sheet {
+        width: min(1122px, calc(100vw - 64px));
+        min-width: 620px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .titlebar {
+        height: 34px;
+        padding: 0 8px;
+      }
+
+      .project-name {
+        display: none;
+      }
+
+      .tabs {
+        overflow-x: auto;
+        padding: 0 6px;
+      }
+
+      .tool-stack {
+        grid-template-columns: repeat(9, 48px);
+      }
+
+      .check-grid {
+        grid-template-columns: repeat(6, max-content);
+      }
+
+      .workspace {
+        grid-template-rows: minmax(0, 1fr) 360px;
+      }
+
+      .stage-wrap {
+        padding: 12px;
+      }
+
+      .side-body {
+        grid-template-columns: 1fr;
+      }
+
+      .sheet {
+        width: min(1122px, calc(100vw - 32px));
+        min-width: 560px;
+      }
+    }
+
+    @media print {
+      body { background: white; overflow: visible; }
+      .titlebar, .ribbon, .side, .canvas-top { display: none; }
+      .app, .workspace, .canvas-shell, .stage-wrap { display: block; height: auto; overflow: visible; padding: 0; }
+      .sheet { box-shadow: none; border: 0; margin: 0; width: 100vw; min-width: 0; height: 70.77vw; aspect-ratio: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="titlebar">
+      <div class="brand"><span class="brand-mark"></span>EletroPlanta Studio</div>
+      <div class="project-name" id="projectName">Projeto sem nome</div>
+    </header>
+
+    <section class="ribbon">
+      <nav class="tabs">
+        <button class="tab active">Arquivo</button>
+        <button class="tab">Ferramentas de Desenho</button>
+        <button class="tab">Relatorios</button>
+        <button class="tab">Exportacao</button>
+      </nav>
+      <div class="toolbar">
+        <div class="tool-group">
+          <div class="mini-actions">
+            <button id="newProjectBtn" title="Limpa a tela e comeca um projeto novo.">Novo</button>
+            <button id="openBtn" title="Abre um arquivo .json salvo pelo programa.">Abrir</button>
+            <button id="saveBtn" title="Baixa o projeto atual em arquivo .json.">Salvar</button>
+            <button id="saveAsBtn" title="Baixa uma nova copia do projeto em .json.">Salvar como</button>
+          </div>
+          <input id="fileInput" type="file" accept="application/json,.json" hidden>
+        </div>
+        <div class="tool-group">
+          <div class="tool-stack">
+            <button class="tool active" data-tool="select" title="Seleciona ambientes na lista e destaca na planta."><span class="tool-icon">P</span>Selecionar</button>
+            <button class="tool" id="roomBtn" title="Abre o formulario para criar um ambiente."><span class="tool-icon">A</span>Ambiente</button>
+            <button class="tool" data-tool="door" title="Adiciona uma porta no ambiente selecionado."><span class="tool-icon">D</span>Porta</button>
+            <button class="tool" data-tool="window" title="Adiciona uma janela no ambiente selecionado."><span class="tool-icon">J</span>Janela</button>
+            <button class="tool" data-tool="outlet" title="Adiciona uma tomada no ambiente selecionado."><span class="tool-icon">T</span>Tomada</button>
+            <button class="tool" data-tool="light" title="Adiciona uma luminaria no ambiente selecionado."><span class="tool-icon">L</span>Luz</button>
+            <button class="tool" data-tool="switch" title="Adiciona um interruptor no ambiente selecionado."><span class="tool-icon">I</span>Interruptor</button>
+            <button class="tool" data-tool="panel" title="Adiciona um quadro no ambiente selecionado."><span class="tool-icon">Q</span>Quadro</button>
+            <button class="tool" data-tool="conduit" title="Liga pontos do mesmo circuito com linhas de eletroduto."><span class="tool-icon">E</span>Eletroduto</button>
+          </div>
+        </div>
+        <div class="tool-group">
+          <div class="check-grid">
+            <label title="Mostra ou esconde as paredes dos ambientes."><input type="checkbox" data-layer="rooms" checked> Paredes</label>
+            <label title="Mostra ou esconde portas e janelas."><input type="checkbox" data-layer="openings" checked> Portas/janelas</label>
+            <label title="Mostra ou esconde tomadas, luminarias, interruptores e quadro."><input type="checkbox" data-layer="points" checked> Pontos</label>
+            <label title="Mostra ou esconde textos, medidas e potencias."><input type="checkbox" data-layer="labels" checked> Etiquetas</label>
+            <label title="Mostra ou esconde as linhas dos circuitos."><input type="checkbox" data-layer="circuits" checked> Circuitos</label>
+            <label title="Mostra ou esconde a prancha com carimbo."><input type="checkbox" data-layer="sheet" checked> Folha</label>
+          </div>
+        </div>
+        <div class="tool-group">
+          <div class="mini-actions">
+            <button id="autoOutletsBtn" title="Sugere tomadas para o ambiente selecionado usando regra demonstrativa.">NBR tomadas</button>
+            <button id="autoLightsBtn" title="Sugere iluminacao para o ambiente selecionado usando regra demonstrativa.">NBR luz</button>
+            <button id="reportBtn" title="Mostra resumo de materiais e circuitos.">Relatorios</button>
+            <button id="circuitsBtn" title="Mostra o detalhamento dos circuitos.">Circuitos</button>
+          </div>
+        </div>
+        <div class="tool-group">
+          <label style="width:130px">Folha
+            <select id="sheetSize">
+              <option>A4 Paisagem</option>
+              <option selected>A3 Paisagem</option>
+              <option>A2 Paisagem</option>
+              <option>A1 Paisagem</option>
+              <option>A0 Paisagem</option>
+            </select>
+          </label>
+          <label style="width:95px">Escala
+            <select id="scaleSelect">
+              <option>1:25</option>
+              <option selected>1:50</option>
+              <option>1:75</option>
+              <option>1:100</option>
+            </select>
+          </label>
+          <button id="exportSvgBtn" title="Baixa o desenho vetorial da planta.">SVG</button>
+          <button id="exportPptBtn" title="Baixa uma prancha editavel que abre no PowerPoint.">PPT</button>
+          <button id="printBtn" title="Abre a impressao do navegador para salvar em PDF.">PDF</button>
+        </div>
+      </div>
+    </section>
+
+    <main class="workspace">
+      <section class="canvas-shell">
+        <div class="canvas-top">
+          <div class="status" id="statusText">Ferramenta: Selecionar</div>
+          <div class="status">Unidade: metros | 1 m = 70 px</div>
+        </div>
+        <div class="stage-wrap">
+          <div class="sheet">
+            <svg id="drawing" viewBox="0 0 1122 794" xmlns="http://www.w3.org/2000/svg"></svg>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side">
+        <div class="side-head">
+          <h2>Projeto</h2>
+          <p id="summaryText">0 ambientes, 0 pontos, 0 circuitos</p>
+        </div>
+        <div class="side-body">
+          <section class="panel">
+            <div class="panel-title">Dados do Projeto</div>
+            <div class="panel-body">
+              <label>Nome do projeto <input id="projectTitle" value="Planta Eletrica Residencial"></label>
+              <label>Cliente <input id="clientName" value="Cliente"></label>
+              <label>Endereco <input id="projectAddress" value="Rua da Aurora, Recife - PE"></label>
+              <div class="cols-2">
+                <label>Projetista <input id="designerName" value="Projetista"></label>
+                <label>Data <input id="projectDate" type="date"></label>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">Ambientes <button type="button" id="addRoomSmallBtn">Adicionar</button></div>
+            <div class="panel-body">
+              <div id="roomsList" class="list"></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">Ponto Eletrico</div>
+            <div class="panel-body">
+              <div class="cols-2">
+                <label>Ambiente <select id="pointRoom"></select></label>
+                <label>Tipo
+                  <select id="pointType">
+                    <option value="outlet">Tomada baixa</option>
+                    <option value="light">Luminaria</option>
+                    <option value="switch">Interruptor</option>
+                    <option value="panel">Quadro</option>
+                  </select>
+                </label>
+              </div>
+              <div class="cols-3">
+                <label>Potencia VA <input id="pointPower" type="number" value="100"></label>
+                <label>Circuito <input id="pointCircuit" type="number" value="1"></label>
+                <label>Parede <input id="pointWall" type="number" value="1"></label>
+              </div>
+              <div class="cols-2">
+                <label>Deslocamento m <input id="pointOffset" type="number" step="0.05" value="0.5"></label>
+                <label>Afastamento m <input id="pointInset" type="number" step="0.05" value="0"></label>
+              </div>
+              <button class="primary" id="addPointBtn">Aplicar ponto</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">Circuitos</div>
+            <div class="panel-body">
+              <table class="table">
+                <thead><tr><th>Circuito</th><th>Potencia</th><th>Pontos</th></tr></thead>
+                <tbody id="circuitsTable"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">Materiais</div>
+            <div class="panel-body">
+              <table class="table">
+                <thead><tr><th>Descricao</th><th>Potencia</th><th>Qtd.</th></tr></thead>
+                <tbody id="materialsTable"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="dialog-backdrop" id="roomDialog">
+    <form class="dialog" id="roomForm">
+      <div class="dialog-head">
+        <div class="dialog-title">Novo Ambiente</div>
+        <button type="button" id="closeRoomDialog">x</button>
+      </div>
+      <div class="dialog-body">
+        <div class="cols-2">
+          <label>Nome do ambiente <input id="roomName" required value="Quarto 01"></label>
+          <label>Categoria
+            <select id="roomCategory">
+              <option>Quarto</option>
+              <option>Banheiro</option>
+              <option>Sala</option>
+              <option>Cozinha</option>
+              <option>Corredor</option>
+              <option>Lavanderia</option>
+              <option>Varanda</option>
+            </select>
+          </label>
+        </div>
+        <div class="dialog-layout">
+          <div>
+            <div class="panel-title" style="border:0;padding-left:0">Forma</div>
+            <div class="shape-grid">
+              <button class="shape-btn active" type="button" data-shape="rect"><span class="shape-icon"></span></button>
+              <button class="shape-btn" type="button" data-shape="l"><span class="shape-icon l"></span></button>
+              <button class="shape-btn" type="button" data-shape="rect"><span class="shape-icon" style="transform:skew(-8deg)"></span></button>
+              <button class="shape-btn" type="button" data-shape="rect"><span class="shape-icon" style="border-radius:10px"></span></button>
+              <button class="shape-btn" type="button" data-shape="l"><span class="shape-icon l" style="transform:rotate(90deg)"></span></button>
+            </div>
+          </div>
+          <div>
+            <div class="preview-box">
+              <svg id="roomPreview" width="300" height="160" viewBox="0 0 300 160"></svg>
+            </div>
+            <div class="cols-2" style="margin-top:12px">
+              <label>A largura m <input id="measureA" type="number" step="0.05" value="4.35"></label>
+              <label>B altura m <input id="measureB" type="number" step="0.05" value="3.45"></label>
+                <label class="l-only field-hidden">C largura m <input id="measureC" type="number" step="0.05" value="2.80"></label>
+                <label class="l-only field-hidden">D altura m <input id="measureD" type="number" step="0.05" value="2.55"></label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" id="cancelRoom">Cancelar</button>
+        <button class="primary" type="submit">Concluir</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const NS = "http://www.w3.org/2000/svg";
+    const PX = 70;
+    const state = {
+      fileHandle: null,
+      tool: "select",
+      selectedRoomId: null,
+      layers: { rooms: true, openings: true, points: true, labels: true, circuits: true, sheet: true },
+      project: {
+        title: "Planta Eletrica Residencial",
+        client: "Cliente",
+        address: "Rua da Aurora, Recife - PE",
+        designer: "Projetista",
+        date: new Date().toISOString().slice(0, 10),
+        scale: "1:50",
+        sheet: "A3 Paisagem",
+        rooms: [],
+        openings: [],
+        points: []
+      }
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const drawing = $("drawing");
+
+    function uid() {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
+      }
+      return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function toast(message) {
+      const el = $("toast");
+      el.textContent = message;
+      el.classList.add("show");
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => el.classList.remove("show"), 2200);
+    }
+
+    function roomPolygon(room) {
+      const m = room.measures;
+      if (room.shape === "l") {
+        const a = m.a * PX, b = m.b * PX, c = m.c * PX, d = m.d * PX;
+        return [
+          [room.x, room.y],
+          [room.x + c, room.y],
+          [room.x + c, room.y + d],
+          [room.x + a, room.y + d],
+          [room.x + a, room.y + b],
+          [room.x, room.y + b]
+        ];
+      }
+      return [
+        [room.x, room.y],
+        [room.x + m.a * PX, room.y],
+        [room.x + m.a * PX, room.y + m.b * PX],
+        [room.x, room.y + m.b * PX]
+      ];
+    }
+
+    function segments(points) {
+      return points.map((p, i) => [p, points[(i + 1) % points.length]]);
+    }
+
+    function polygonAreaM2(points) {
+      let sum = 0;
+      for (let i = 0; i < points.length; i++) {
+        const [x1, y1] = points[i];
+        const [x2, y2] = points[(i + 1) % points.length];
+        sum += x1 * y2 - x2 * y1;
+      }
+      return Math.abs(sum / 2) / (PX * PX);
+    }
+
+    function perimeterM(points) {
+      return segments(points).reduce((acc, [[x1, y1], [x2, y2]]) => acc + Math.hypot(x2 - x1, y2 - y1) / PX, 0);
+    }
+
+    function wallPoint(room, wallNumber, offsetM, insetM = 0) {
+      const segs = segments(roomPolygon(room));
+      const seg = segs[Math.max(0, Math.min(segs.length - 1, wallNumber - 1))];
+      const [[x1, y1], [x2, y2]] = seg;
+      const length = Math.hypot(x2 - x1, y2 - y1);
+      const t = Math.max(0, Math.min(1, (offsetM * PX) / length));
+      const x = x1 + (x2 - x1) * t;
+      const y = y1 + (y2 - y1) * t;
+      const nx = -(y2 - y1) / length;
+      const ny = (x2 - x1) / length;
+      return { x: x + nx * insetM * PX, y: y + ny * insetM * PX, angle: Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI };
+    }
+
+    function add(tag, attrs = {}, parent = drawing) {
+      const el = document.createElementNS(NS, tag);
+      Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+      parent.appendChild(el);
+      return el;
+    }
+
+    function clearSvg() {
+      while (drawing.firstChild) drawing.removeChild(drawing.firstChild);
+    }
+
+    function render() {
+      clearSvg();
+      if (state.layers.sheet) drawSheet();
+      if (state.layers.rooms) state.project.rooms.forEach(drawRoom);
+      if (state.layers.openings) state.project.openings.forEach(drawOpening);
+      if (state.layers.circuits) drawCircuitLines();
+      if (state.layers.points) state.project.points.forEach(drawPoint);
+      drawTitleBlock();
+      renderLists();
+      syncProjectFields();
+    }
+
+    function drawSheet() {
+      add("rect", { x: 36, y: 36, width: 1050, height: 690, fill: "none", stroke: "#222", "stroke-width": 2 });
+      add("rect", { x: 760, y: 640, width: 326, height: 86, fill: "white", stroke: "#586575", "stroke-width": 1.5 });
+      add("line", { x1: 760, y1: 670, x2: 1086, y2: 670, stroke: "#586575" });
+      add("line", { x1: 860, y1: 640, x2: 860, y2: 726, stroke: "#586575" });
+      add("line", { x1: 985, y1: 670, x2: 985, y2: 726, stroke: "#586575" });
+    }
+
+    function drawTitleBlock() {
+      const p = state.project;
+      add("text", { x: 870, y: 660, "font-size": 14, "font-weight": 700, fill: "#1f2933" }).textContent = p.title || "Planta Eletrica";
+      add("text", { x: 770, y: 660, "font-size": 13, "font-weight": 800, fill: "#d45b2a" }).textContent = "EP";
+      add("text", { x: 870, y: 688, "font-size": 9, fill: "#4b5563" }).textContent = "CLIENTE";
+      add("text", { x: 870, y: 704, "font-size": 12, fill: "#111827" }).textContent = p.client || "";
+      add("text", { x: 990, y: 688, "font-size": 9, fill: "#4b5563" }).textContent = "ESCALA";
+      add("text", { x: 990, y: 704, "font-size": 12, fill: "#111827" }).textContent = p.scale;
+      add("text", { x: 990, y: 720, "font-size": 10, fill: "#4b5563" }).textContent = p.date || "";
+      add("text", { x: 770, y: 716, "font-size": 10, fill: "#4b5563" }).textContent = p.address || "";
+    }
+
+    function drawRoom(room) {
+      const pts = roomPolygon(room);
+      const selected = room.id === state.selectedRoomId;
+      add("polygon", {
+        points: pts.map(p => p.join(",")).join(" "),
+        fill: selected ? "#c8f8c7" : "#fff",
+        stroke: "#b6bec8",
+        "stroke-width": 8,
+        "stroke-linejoin": "miter"
+      });
+      add("polygon", {
+        points: pts.map(p => p.join(",")).join(" "),
+        fill: selected ? "rgba(123, 222, 134, .34)" : "transparent",
+        stroke: "#8e99a6",
+        "stroke-width": 1.2
+      });
+
+      const area = polygonAreaM2(pts);
+      const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length;
+      const cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+      if (state.layers.labels) {
+        add("text", { x: cx, y: cy - 4, "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: "#1f2933" }).textContent = room.name;
+        add("text", { x: cx, y: cy + 12, "text-anchor": "middle", "font-size": 11, fill: "#303846" }).textContent = `${area.toFixed(2)}mÂ²`;
+        segments(pts).forEach(([[x1, y1], [x2, y2]]) => {
+          const midX = (x1 + x2) / 2;
+          const midY = (y1 + y2) / 2;
+          const len = Math.hypot(x2 - x1, y2 - y1) / PX;
+          const ang = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+          add("text", {
+            x: midX, y: midY - 8,
+            "text-anchor": "middle",
+            "font-size": 10,
+            fill: "#384250",
+            transform: `rotate(${Math.abs(ang) === 90 ? ang : 0} ${midX} ${midY})`
+          }).textContent = len.toFixed(2).replace(".", ",");
+        });
+      }
+    }
+
+    function drawOpening(opening) {
+      const room = state.project.rooms.find(r => r.id === opening.roomId);
+      if (!room) return;
+      const p = wallPoint(room, opening.wall, opening.offset);
+      const w = opening.widthCm / 100 * PX;
+      const g = add("g", { transform: `translate(${p.x} ${p.y}) rotate(${p.angle})` });
+      add("line", { x1: -w / 2, y1: 0, x2: w / 2, y2: 0, stroke: "white", "stroke-width": 10 }, g);
+      add("line", { x1: -w / 2, y1: 0, x2: w / 2, y2: 0, stroke: "#9aa5b1", "stroke-width": 2 }, g);
+      if (opening.type.includes("Porta")) {
+        add("path", { d: `M ${-w / 2} 0 A ${w} ${w} 0 0 1 ${w / 2} ${w}`, fill: "none", stroke: "#b7bec8", "stroke-width": 1.4 }, g);
+        add("line", { x1: -w / 2, y1: 0, x2: -w / 2, y2: w, stroke: "#b7bec8", "stroke-width": 1.4 }, g);
+      } else {
+        add("line", { x1: -w / 2, y1: -5, x2: w / 2, y2: -5, stroke: "#7e8793", "stroke-width": 1 }, g);
+        add("line", { x1: -w / 2, y1: 5, x2: w / 2, y2: 5, stroke: "#7e8793", "stroke-width": 1 }, g);
+      }
+    }
+
+    function drawCircuitLines() {
+      const byCircuit = new Map();
+      state.project.points.forEach(point => {
+        if (!byCircuit.has(point.circuit)) byCircuit.set(point.circuit, []);
+        byCircuit.get(point.circuit).push(point);
+      });
+      byCircuit.forEach(points => {
+        const panel = points.find(p => p.type === "panel") || points[0];
+        points.forEach(point => {
+          if (point.id === panel.id) return;
+          add("line", {
+            x1: panel.x, y1: panel.y, x2: point.x, y2: point.y,
+            stroke: "#d8835f",
+            "stroke-width": 1,
+            opacity: .55
+          });
+        });
+      });
+    }
+
+    function drawPoint(point) {
+      const g = add("g", { transform: `translate(${point.x} ${point.y}) rotate(${point.angle || 0})` });
+      if (point.type === "outlet") {
+        add("path", { d: "M -9 0 L 0 -12 L 9 0 Z", fill: "white", stroke: "#1f2933", "stroke-width": 1.5 }, g);
+      } else if (point.type === "light") {
+        add("circle", { cx: 0, cy: 0, r: 13, fill: "white", stroke: "#1f2933", "stroke-width": 1.5 }, g);
+        add("line", { x1: -9, y1: -9, x2: 9, y2: 9, stroke: "#1f2933" }, g);
+        add("line", { x1: 9, y1: -9, x2: -9, y2: 9, stroke: "#1f2933" }, g);
+      } else if (point.type === "switch") {
+        add("circle", { cx: 0, cy: 0, r: 5, fill: "white", stroke: "#1f2933", "stroke-width": 1.5 }, g);
+        add("line", { x1: 5, y1: 0, x2: 18, y2: -9, stroke: "#1f2933" }, g);
+      } else if (point.type === "panel") {
+        add("rect", { x: -16, y: -8, width: 32, height: 16, fill: "#222", stroke: "#111", "stroke-width": 1 }, g);
+      }
+      if (state.layers.labels) {
+        add("text", { x: point.x + 10, y: point.y - 9, "font-size": 10, fill: "#111827" }).textContent = `${point.power}VA`;
+        add("text", { x: point.x + 10, y: point.y + 4, "font-size": 10, fill: "#111827" }).textContent = `-${point.circuit}-`;
+      }
+    }
+
+    function typeLabel(type) {
+      return { outlet: "Tomada baixa", light: "Luminaria de teto", switch: "Interruptor simples", panel: "Quadro" }[type] || type;
+    }
+
+    function renderLists() {
+      $("summaryText").textContent = `${state.project.rooms.length} ambientes, ${state.project.points.length} pontos, ${circuitSummary().length} circuitos`;
+      $("projectName").textContent = state.project.title || "Projeto sem nome";
+
+      const roomsList = $("roomsList");
+      roomsList.innerHTML = "";
+      state.project.rooms.forEach(room => {
+        const pts = roomPolygon(room);
+        const card = document.createElement("button");
+        card.className = "row-card";
+        card.innerHTML = `<span><strong>${room.name}</strong><br><span>${room.category} | ${polygonAreaM2(pts).toFixed(2)}mÂ² | ${perimeterM(pts).toFixed(2)}m</span></span><span>Editar</span>`;
+        card.onclick = () => { state.selectedRoomId = room.id; render(); };
+        roomsList.appendChild(card);
+      });
+
+      const pointRoom = $("pointRoom");
+      pointRoom.innerHTML = "";
+      state.project.rooms.forEach(room => {
+        const opt = document.createElement("option");
+        opt.value = room.id;
+        opt.textContent = room.name;
+        pointRoom.appendChild(opt);
+      });
+      if (state.selectedRoomId) pointRoom.value = state.selectedRoomId;
+
+      const circuitsBody = $("circuitsTable");
+      circuitsBody.innerHTML = "";
+      circuitSummary().forEach(c => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>Circuito ${c.id}</td><td>${c.power} VA</td><td>${c.count}</td>`;
+        circuitsBody.appendChild(tr);
+      });
+
+      const matBody = $("materialsTable");
+      matBody.innerHTML = "";
+      materialSummary().forEach(m => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${m.name}</td><td>${m.power || ""}</td><td>${m.qty}</td>`;
+        matBody.appendChild(tr);
+      });
+    }
+
+    function circuitSummary() {
+      const map = new Map();
+      state.project.points.forEach(p => {
+        if (!map.has(p.circuit)) map.set(p.circuit, { id: p.circuit, power: 0, count: 0 });
+        const row = map.get(p.circuit);
+        row.power += Number(p.power) || 0;
+        row.count += 1;
+      });
+      return [...map.values()].sort((a, b) => a.id - b.id);
+    }
+
+    function materialSummary() {
+      const map = new Map();
+      state.project.points.forEach(p => {
+        const key = `${typeLabel(p.type)}|${p.power}`;
+        if (!map.has(key)) map.set(key, { name: typeLabel(p.type), power: p.power ? `${p.power} VA` : "", qty: 0 });
+        map.get(key).qty += 1;
+      });
+      state.project.openings.forEach(o => {
+        const key = `${o.type}|${o.widthCm}`;
+        if (!map.has(key)) map.set(key, { name: o.type, power: `${o.widthCm} cm`, qty: 0 });
+        map.get(key).qty += 1;
+      });
+      return [...map.values()];
+    }
+
+    function syncProjectFields() {
+      $("projectTitle").value = state.project.title;
+      $("clientName").value = state.project.client;
+      $("projectAddress").value = state.project.address;
+      $("designerName").value = state.project.designer;
+      $("projectDate").value = state.project.date;
+      $("scaleSelect").value = state.project.scale;
+      $("sheetSize").value = state.project.sheet;
+    }
+
+    function updateFromFields() {
+      state.project.title = $("projectTitle").value;
+      state.project.client = $("clientName").value;
+      state.project.address = $("projectAddress").value;
+      state.project.designer = $("designerName").value;
+      state.project.date = $("projectDate").value;
+      state.project.scale = $("scaleSelect").value;
+      state.project.sheet = $("sheetSize").value;
+    }
+
+    function openRoomDialog() {
+      const next = state.project.rooms.length + 1;
+      if (!$("roomName").value || /^Quarto \d+$/i.test($("roomName").value)) {
+        $("roomName").value = `Quarto ${String(next).padStart(2, "0")}`;
+      }
+      $("roomDialog").classList.add("open");
+      updatePreview();
+      setTimeout(() => $("roomName").focus(), 0);
+    }
+
+    function closeRoomDialog() {
+      $("roomDialog").classList.remove("open");
+    }
+
+    function updatePreview() {
+      const svg = $("roomPreview");
+      svg.innerHTML = "";
+      const shape = document.querySelector(".shape-btn.active").dataset.shape;
+      document.querySelectorAll(".l-only").forEach(field => {
+        field.classList.toggle("field-hidden", shape !== "l");
+      });
+      const pts = shape === "l"
+        ? [[55,25],[160,25],[160,75],[235,75],[235,130],[55,130]]
+        : [[55,30],[235,30],[235,130],[55,130]];
+      const poly = document.createElementNS(NS, "polygon");
+      poly.setAttribute("points", pts.map(p => p.join(",")).join(" "));
+      poly.setAttribute("fill", "#dff4f0");
+      poly.setAttribute("stroke", "#24958d");
+      poly.setAttribute("stroke-width", "4");
+      svg.appendChild(poly);
+      const t = document.createElementNS(NS, "text");
+      t.setAttribute("x", "145");
+      t.setAttribute("y", "82");
+      t.setAttribute("text-anchor", "middle");
+      t.setAttribute("font-size", "12");
+      t.textContent = shape === "l" ? "Ambiente em L" : "Ambiente retangular";
+      svg.appendChild(t);
+    }
+
+    function nextRoomPosition() {
+      const count = state.project.rooms.length;
+      return { x: 90 + (count % 4) * 190, y: 95 + Math.floor(count / 4) * 185 };
+    }
+
+    function createRoom(formData) {
+      const pos = nextRoomPosition();
+      const room = {
+        id: uid(),
+        name: formData.name,
+        category: formData.category,
+        shape: formData.shape,
+        x: pos.x,
+        y: pos.y,
+        rotation: 0,
+        measures: formData.measures
+      };
+      state.project.rooms.push(room);
+      state.selectedRoomId = room.id;
+      render();
+      toast("Ambiente criado.");
+    }
+
+    function addPointFromForm() {
+      const room = state.project.rooms.find(r => r.id === $("pointRoom").value);
+      if (!room) return toast("Crie um ambiente primeiro.");
+      const type = $("pointType").value;
+      const wall = Number($("pointWall").value || 1);
+      let p;
+      if (type === "light") {
+        const pts = roomPolygon(room);
+        p = { x: pts.reduce((a, q) => a + q[0], 0) / pts.length, y: pts.reduce((a, q) => a + q[1], 0) / pts.length, angle: 0 };
+      } else {
+        p = wallPoint(room, wall, Number($("pointOffset").value || 0), Number($("pointInset").value || 0));
+      }
+      state.project.points.push({
+        id: uid(),
+        roomId: room.id,
+        type,
+        power: Number($("pointPower").value || 0),
+        circuit: Number($("pointCircuit").value || 1),
+        wall,
+        offset: Number($("pointOffset").value || 0),
+        inset: Number($("pointInset").value || 0),
+        x: p.x,
+        y: p.y,
+        angle: p.angle
+      });
+      render();
+      toast("Ponto aplicado.");
+    }
+
+    function autoOutlets() {
+      const roomId = state.selectedRoomId || $("pointRoom").value;
+      const room = state.project.rooms.find(r => r.id === roomId);
+      if (!room) return toast("Selecione um ambiente.");
+      state.project.points = state.project.points.filter(p => !(p.roomId === room.id && p.type === "outlet"));
+      const per = perimeterM(roomPolygon(room));
+      const count = Math.max(1, Math.ceil(per / 5));
+      const segs = segments(roomPolygon(room));
+      for (let i = 0; i < count; i++) {
+        const wall = (i % segs.length) + 1;
+        const [[x1, y1], [x2, y2]] = segs[wall - 1];
+        const lengthM = Math.hypot(x2 - x1, y2 - y1) / PX;
+        const p = wallPoint(room, wall, Math.min(lengthM - .2, .45 + i * .35));
+        state.project.points.push({ id: uid(), roomId: room.id, type: "outlet", power: 100, circuit: 1, wall, offset: .45 + i * .35, inset: 0, x: p.x, y: p.y, angle: p.angle });
+      }
+      render();
+      toast("Tomadas sugeridas por regra editavel.");
+    }
+
+    function autoLights() {
+      const roomId = state.selectedRoomId || $("pointRoom").value;
+      const room = state.project.rooms.find(r => r.id === roomId);
+      if (!room) return toast("Selecione um ambiente.");
+      state.project.points = state.project.points.filter(p => !(p.roomId === room.id && p.type === "light"));
+      const pts = roomPolygon(room);
+      const area = polygonAreaM2(pts);
+      const power = area <= 6 ? 100 : 100 + Math.ceil((area - 6) / 4) * 60;
+      state.project.points.push({
+        id: uid(),
+        roomId: room.id,
+        type: "light",
+        power,
+        circuit: 2,
+        wall: 0,
+        offset: 0,
+        inset: 0,
+        x: pts.reduce((a, p) => a + p[0], 0) / pts.length,
+        y: pts.reduce((a, p) => a + p[1], 0) / pts.length,
+        angle: 0
+      });
+      render();
+      toast("Iluminacao sugerida por regra editavel.");
+    }
+
+    function download(name, content, type) {
+      const blob = new Blob([content], { type });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    async function saveProject(saveAs = false) {
+      updateFromFields();
+      const text = JSON.stringify(state.project, null, 2);
+      const base = (state.project.title || "projeto-eletrico")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "projeto-eletrico";
+      const suffix = saveAs ? `-${new Date().toISOString().slice(0, 10)}` : "";
+      download(`${base}${suffix}.json`, text, "application/json");
+      toast("Projeto baixado em JSON.");
+    }
+
+    function loadProject(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.project = JSON.parse(reader.result);
+        state.fileHandle = null;
+        state.selectedRoomId = state.project.rooms[0]?.id || null;
+        render();
+        toast("Projeto aberto.");
+      };
+      reader.readAsText(file);
+    }
+
+    function exportSvg() {
+      updateFromFields();
+      const clone = drawing.cloneNode(true);
+      clone.setAttribute("xmlns", NS);
+      download("planta-eletrica.svg", new XMLSerializer().serializeToString(clone), "image/svg+xml");
+    }
+
+    function exportPpt() {
+      updateFromFields();
+      const clone = drawing.cloneNode(true);
+      clone.setAttribute("xmlns", NS);
+      const svg = new XMLSerializer().serializeToString(clone);
+      const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${state.project.title}</title>
+  <style>
+    @page { size: 13.333in 7.5in; margin: 0; }
+    body { margin: 0; background: white; font-family: Arial, sans-serif; }
+    .slide { width: 13.333in; height: 7.5in; display: grid; place-items: center; }
+    svg { width: 12.8in; height: 7.2in; }
+  </style>
+</head>
+<body>
+  <div class="slide">${svg}</div>
+</body>
+</html>`;
+      download("planta-eletrica.ppt", html, "application/vnd.ms-powerpoint");
+      toast("Prancha PPT exportada.");
+    }
+
+    function showReport() {
+      const circuits = circuitSummary().map(c => `Circuito ${c.id}: ${c.power} VA (${c.count} pontos)`).join("\n");
+      const materials = materialSummary().map(m => `${m.name} ${m.power}: ${m.qty}`).join("\n");
+      alert(`LISTA DE CIRCUITOS\n\n${circuits || "Sem circuitos. Adicione pontos eletricos primeiro."}\n\nLISTA DE MATERIAIS\n\n${materials || "Sem materiais. Adicione pontos, portas ou janelas primeiro."}`);
+    }
+
+    function seedExample() {
+      const rooms = [
+        ["Quarto 01", "Quarto", 4.35, 3.45, 90, 90],
+        ["Banheiro 01", "Banheiro", 1.40, 2.40, 415, 90],
+        ["Banheiro 02", "Banheiro", 1.40, 2.40, 535, 90],
+        ["Quarto 02", "Quarto", 2.65, 2.40, 655, 90],
+        ["Sala", "Sala", 5.15, 3.00, 415, 320],
+        ["Cozinha", "Cozinha", 3.20, 3.00, 160, 320]
+      ];
+      state.project.rooms = rooms.map(r => ({ id: uid(), name: r[0], category: r[1], shape: "rect", measures: { a: r[2], b: r[3], c: 0, d: 0 }, x: r[4], y: r[5], rotation: 0 }));
+      state.project.openings = [
+        { id: uid(), roomId: state.project.rooms[0].id, type: "Porta de 1 Folha", widthCm: 80, wall: 3, offset: 3.4 },
+        { id: uid(), roomId: state.project.rooms[1].id, type: "Porta de 1 Folha", widthCm: 70, wall: 3, offset: .3 },
+        { id: uid(), roomId: state.project.rooms[0].id, type: "Janela", widthCm: 150, wall: 1, offset: 1.6 }
+      ];
+      state.project.points = [];
+      state.selectedRoomId = state.project.rooms[0].id;
+      state.project.rooms.forEach(room => {
+        const pts = roomPolygon(room);
+        const center = { x: pts.reduce((a, p) => a + p[0], 0) / pts.length, y: pts.reduce((a, p) => a + p[1], 0) / pts.length };
+        state.project.points.push({ id: uid(), roomId: room.id, type: "light", power: 100, circuit: 2, wall: 0, offset: 0, inset: 0, x: center.x, y: center.y, angle: 0 });
+      });
+      render();
+    }
+
+    function selectedRoom() {
+      return state.project.rooms.find(r => r.id === state.selectedRoomId) || state.project.rooms[0];
+    }
+
+    function requireRoom() {
+      const room = selectedRoom();
+      if (!room) {
+        toast("Adicione um ambiente primeiro.");
+        openRoomDialog();
+        return null;
+      }
+      state.selectedRoomId = room.id;
+      return room;
+    }
+
+    function addOpeningQuick(type) {
+      const room = requireRoom();
+      if (!room) return;
+      const widthCm = type === "Janela" ? 120 : 80;
+      const wall = type === "Janela" ? 1 : 3;
+      state.project.openings.push({
+        id: uid(),
+        roomId: room.id,
+        type,
+        widthCm,
+        wall,
+        offset: .6
+      });
+      render();
+      toast(`${type} adicionada no ambiente selecionado.`);
+    }
+
+    function addPointQuick(type) {
+      const room = requireRoom();
+      if (!room) return;
+      $("pointRoom").value = room.id;
+      $("pointType").value = type;
+      $("pointPower").value = type === "light" ? 100 : 100;
+      $("pointCircuit").value = type === "light" ? 2 : 1;
+      $("pointWall").value = type === "switch" ? 3 : 1;
+      $("pointOffset").value = type === "panel" ? 1 : .5;
+      addPointFromForm();
+    }
+
+    function runToolAction(tool) {
+      if (tool === "select") {
+        toast("Selecione um ambiente na lista lateral para destacar na planta.");
+      } else if (tool === "door") {
+        addOpeningQuick("Porta de 1 Folha");
+      } else if (tool === "window") {
+        addOpeningQuick("Janela");
+      } else if (tool === "outlet") {
+        addPointQuick("outlet");
+      } else if (tool === "light") {
+        addPointQuick("light");
+      } else if (tool === "switch") {
+        addPointQuick("switch");
+      } else if (tool === "panel") {
+        addPointQuick("panel");
+      } else if (tool === "conduit") {
+        state.layers.circuits = true;
+        document.querySelector('[data-layer="circuits"]').checked = true;
+        render();
+        toast("Eletrodutos aparecem como linhas entre pontos do mesmo circuito.");
+      }
+    }
+
+    document.querySelectorAll(".tool[data-tool]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tool").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        state.tool = btn.dataset.tool;
+        $("statusText").textContent = `Ferramenta: ${btn.textContent.trim()}`;
+        runToolAction(state.tool);
+      });
+    });
+
+    document.querySelectorAll(".tab").forEach(tabBtn => {
+      tabBtn.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        tabBtn.classList.add("active");
+        const name = tabBtn.textContent.trim();
+        if (name === "Arquivo") {
+          toast("Use Novo, Abrir, Salvar e Salvar como para trabalhar com arquivos JSON.");
+        } else if (name === "Ferramentas de Desenho") {
+          toast("Use Ambiente, Porta, Janela e pontos eletricos para montar a planta.");
+        } else if (name === "Relatorios") {
+          showReport();
+        } else if (name === "Exportacao") {
+          toast("Use SVG para desenho vetorial, PPT para PowerPoint ou PDF para imprimir/salvar.");
+        }
+      });
+    });
+
+    document.querySelectorAll(".shape-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".shape-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        updatePreview();
+      });
+    });
+
+    document.querySelectorAll("[data-layer]").forEach(input => {
+      input.addEventListener("change", () => {
+        state.layers[input.dataset.layer] = input.checked;
+        render();
+      });
+    });
+
+    ["projectTitle", "clientName", "projectAddress", "designerName", "projectDate", "scaleSelect", "sheetSize"].forEach(id => {
+      $(id).addEventListener("input", () => { updateFromFields(); render(); });
+    });
+
+    $("projectDate").value = state.project.date;
+    $("roomBtn").onclick = openRoomDialog;
+    $("addRoomSmallBtn").onclick = openRoomDialog;
+    $("closeRoomDialog").onclick = closeRoomDialog;
+    $("cancelRoom").onclick = closeRoomDialog;
+    $("roomForm").onsubmit = (event) => {
+      event.preventDefault();
+      const shape = document.querySelector(".shape-btn.active").dataset.shape;
+      createRoom({
+        name: $("roomName").value,
+        category: $("roomCategory").value,
+        shape,
+        measures: {
+          a: Number($("measureA").value),
+          b: Number($("measureB").value),
+          c: Number($("measureC").value),
+          d: Number($("measureD").value)
+        }
+      });
+      closeRoomDialog();
+    };
+
+    $("addPointBtn").onclick = addPointFromForm;
+    $("autoOutletsBtn").onclick = autoOutlets;
+    $("autoLightsBtn").onclick = autoLights;
+    $("reportBtn").onclick = showReport;
+    $("circuitsBtn").onclick = showReport;
+    $("exportSvgBtn").onclick = exportSvg;
+    $("exportPptBtn").onclick = exportPpt;
+    $("printBtn").onclick = () => { updateFromFields(); window.print(); };
+    $("saveBtn").onclick = () => saveProject(false).catch(err => toast(err.message));
+    $("saveAsBtn").onclick = () => saveProject(true).catch(err => toast(err.message));
+    $("openBtn").onclick = () => $("fileInput").click();
+    $("fileInput").onchange = (event) => event.target.files[0] && loadProject(event.target.files[0]);
+    $("newProjectBtn").onclick = () => {
+      state.project.rooms = [];
+      state.project.openings = [];
+      state.project.points = [];
+      state.selectedRoomId = null;
+      render();
+      toast("Projeto novo criado.");
+    };
+
+    drawing.addEventListener("click", (event) => {
+      const rect = drawing.getBoundingClientRect();
+      const x = (event.clientX - rect.left) * 1122 / rect.width;
+      const y = (event.clientY - rect.top) * 794 / rect.height;
+      if (state.tool === "panel") {
+        state.project.points.push({ id: uid(), roomId: state.selectedRoomId, type: "panel", power: 0, circuit: 1, wall: 0, offset: 0, inset: 0, x, y, angle: 0 });
+        render();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
+
+
+
+
+
