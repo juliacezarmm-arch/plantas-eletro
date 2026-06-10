@@ -1823,6 +1823,14 @@
       return SHEET_SIZES[state.project.sheet] || SHEET_SIZES["A3 Paisagem"];
     }
 
+    function sheetFormatLabel() {
+      return String(state.project.sheet || "A3").split(/\s+/)[0] || "A3";
+    }
+
+    function revisionLabel() {
+      return String(state.project.revision || "01").replace(/^rev\.?\s*/i, "") || "01";
+    }
+
     function updatePrintPageStyle() {
       const sheet = getSheetSpec();
       let style = document.getElementById("dynamicPrintPage");
@@ -1964,14 +1972,17 @@
       const line = (yPos) => add("line", { x1: x, y1: yPos, x2: x + w, y2: yPos, stroke: "#d1d7df", "stroke-width": 1 });
       const label = (text, tx, ty, size = 6.4) => add("text", { x: tx, y: ty, "font-size": size * scale, "font-weight": 800, fill: "#222" }).textContent = text;
       const value = (text, tx, ty, size = 7.2, weight = 600, anchor = "start") => add("text", { x: tx, y: ty, "font-size": size * scale, "font-weight": weight, fill: "#1f2933", "text-anchor": anchor }).textContent = text || "";
-      const logoH = h * .25;
-      const companyH = h * .19;
-      const infoH = h * .34;
-      const sheetH = h - logoH - companyH - infoH;
+      const logoH = h * .22;
+      const companyH = h * .16;
+      const revisionH = h * .12;
+      const infoH = h * .32;
+      const sheetH = h - logoH - companyH - revisionH - infoH;
       const yCompany = y + logoH;
-      const yInfo = yCompany + companyH;
+      const yRevision = yCompany + companyH;
+      const yInfo = yRevision + revisionH;
       const ySheet = yInfo + infoH;
       line(yCompany);
+      line(yRevision);
       line(yInfo);
       line(ySheet);
       if (p.logoDataUrl) {
@@ -1982,6 +1993,8 @@
       value(p.companyName || "", x + 10 * scale, yCompany + companyH * .24, 7.4, 800);
       value(p.companyContact || "", x + 10 * scale, yCompany + companyH * .52, 6.2, 500);
       value(p.companyAddress || "", x + 10 * scale, yCompany + companyH * .80, 6.2, 500);
+      label("REVISÃO:", x + 8 * scale, yRevision + revisionH * .32, 6.6);
+      value(revisionLabel(), x + w / 2, yRevision + revisionH * .78, 17, 800, "middle");
       const fields = [
         ["PROJETO:", p.title || "Planta Eletrica Residencial"],
         ["CLIENTE:", p.client || ""],
@@ -1996,13 +2009,11 @@
         value(val, x + 58 * scale, yy, 6.4, index === 0 ? 700 : 500);
       });
       const sheetParts = String(p.sheetNumber || "01/01").split("/");
-      const revisionText = String(p.revision || "").replace(/^rev\.?\s*/i, "");
       label("PRANCHA:", x + 8 * scale, ySheet + sheetH * .18);
+      value(sheetFormatLabel(), x + w - 8 * scale, ySheet + sheetH * .18, 7.5, 800, "end");
       value(sheetParts[0] || "01", x + w * .18, ySheet + sheetH * .58, 30, 800);
       value("/", x + w * .58, ySheet + sheetH * .70, 16, 700);
       value(sheetParts[1] || "01", x + w * .72, ySheet + sheetH * .76, 12, 700);
-      label("REVISÃO:", x + 8 * scale, ySheet + sheetH * .92);
-      value(revisionText, x + 58 * scale, ySheet + sheetH * .92, 7, 700);
     }
 
     function drawTitleBlock() {
@@ -2023,47 +2034,46 @@
       const dataW = w - pageW - logoW;
       const pageX = x + dataW;
       const logoX = pageX + pageW;
-      const row1 = y + h * .19;
-      const row2 = y + h * .36;
-      const row3 = y + h * .53;
-      const row4 = y + h * .70;
+      const rowRev = y + h * .17;
+      const row1 = y + h * .32;
+      const row2 = y + h * .48;
+      const row3 = y + h * .64;
+      const row4 = y + h * .78;
       const bottom = y + h;
-      const revY = y + h * .78;
       const valueX = x + 58 * scale;
       const label = (text, tx, ty) => add("text", { x: tx, y: ty, "font-size": 7 * scale, "font-weight": 800, fill: "#222", "letter-spacing": ".2" }).textContent = text;
       const value = (text, tx, ty, size = 9, weight = 600, anchor = "start") => add("text", { x: tx, y: ty, "font-size": size * scale, "font-weight": weight, fill: "#1f2933", "text-anchor": anchor }).textContent = text || "";
 
       add("rect", { x: x + 4, y: y + 4, width: w - 8, height: h - 8, fill: "none", stroke: "#c4ccd6", "stroke-width": 1 });
-      [row1, row2, row3, row4].forEach(ly => add("line", { x1: x + 4, y1: ly, x2: pageX, y2: ly, stroke: "#d1d7df", "stroke-width": 1 }));
+      [rowRev, row1, row2, row3, row4].forEach(ly => add("line", { x1: x + 4, y1: ly, x2: pageX, y2: ly, stroke: "#d1d7df", "stroke-width": 1 }));
       add("line", { x1: x + 4, y1: row4, x2: pageX, y2: row4, stroke: "#d1d7df", "stroke-width": 1 });
       add("line", { x1: x + dataW * .34, y1: row4, x2: x + dataW * .34, y2: bottom - 4, stroke: "#d1d7df", "stroke-width": 1 });
       add("line", { x1: x + dataW * .64, y1: row4, x2: x + dataW * .64, y2: bottom - 4, stroke: "#d1d7df", "stroke-width": 1 });
       add("line", { x1: pageX, y1: y, x2: pageX, y2: bottom, stroke: "#1f2933", "stroke-width": 1.1 });
       add("line", { x1: logoX, y1: y, x2: logoX, y2: bottom, stroke: "#1f2933", "stroke-width": 1.1 });
-      add("line", { x1: pageX, y1: revY, x2: logoX, y2: revY, stroke: "#d1d7df", "stroke-width": 1 });
 
-      label("PROJETO:", x + 12 * scale, y + h * .13);
-      value(p.title || "Planta Eletrica Residencial", valueX, y + h * .13, 8, 700);
-      label("CLIENTE:", x + 12 * scale, y + h * .30);
-      value(p.client || "", valueX, y + h * .30, 8, 600);
-      label("ENDEREÇO:", x + 12 * scale, y + h * .47);
-      value(p.address || "", valueX, y + h * .47, 8, 600);
-      label("ARQ. RESPONSÁVEL:", x + 12 * scale, y + h * .64);
-      value(p.designer || "", x + 104 * scale, y + h * .64, 8, 700);
-      label("DATA:", x + 12 * scale, y + h * .91);
-      value(p.date || "", x + 45 * scale, y + h * .91, 8, 600);
-      label("ÁREA:", x + dataW * .34 + 12 * scale, y + h * .91);
-      value(p.area || "", x + dataW * .34 + 45 * scale, y + h * .91, 8, 600);
-      label("ESCALA:", x + dataW * .64 + 12 * scale, y + h * .91);
-      value(p.scale || "", x + dataW * .64 + 52 * scale, y + h * .91, 8, 600);
+      label("REVISÃO:", x + 12 * scale, y + h * .11);
+      value(revisionLabel(), x + 70 * scale, y + h * .11, 11, 800);
+      label("PROJETO:", x + 12 * scale, y + h * .26);
+      value(p.title || "Planta Eletrica Residencial", valueX, y + h * .26, 8, 700);
+      label("CLIENTE:", x + 12 * scale, y + h * .42);
+      value(p.client || "", valueX, y + h * .42, 8, 600);
+      label("ENDEREÇO:", x + 12 * scale, y + h * .58);
+      value(p.address || "", valueX, y + h * .58, 8, 600);
+      label("ARQ. RESPONSÁVEL:", x + 12 * scale, y + h * .73);
+      value(p.designer || "", x + 104 * scale, y + h * .73, 8, 700);
+      label("DATA:", x + 12 * scale, y + h * .92);
+      value(p.date || "", x + 45 * scale, y + h * .92, 8, 600);
+      label("ÁREA:", x + dataW * .34 + 12 * scale, y + h * .92);
+      value(p.area || "", x + dataW * .34 + 45 * scale, y + h * .92, 8, 600);
+      label("ESCALA:", x + dataW * .64 + 12 * scale, y + h * .92);
+      value(p.scale || "", x + dataW * .64 + 52 * scale, y + h * .92, 8, 600);
       label("PRANCHA:", pageX + 10 * scale, y + h * .18);
       const sheetParts = String(p.sheetNumber || "01/01").split("/");
-      const revisionText = String(p.revision || "").replace(/^rev\.?\s*/i, "");
+      value(sheetFormatLabel(), pageX + pageW - 8 * scale, y + h * .18, 8, 800, "end");
       value(sheetParts[0] || "01", pageX + pageW * .22, y + h * .58, 30, 800);
       value("/", pageX + pageW * .58, y + h * .72, 16, 700);
       value(sheetParts[1] || "01", pageX + pageW * .74, y + h * .77, 12, 700);
-      label("REVISÃO:", pageX + 10 * scale, y + h * .91);
-      value(revisionText, pageX + 54 * scale, y + h * .91, 7, 700);
       if (p.logoDataUrl) {
         add("image", { x: logoX + 10, y: y + 10, width: logoW - 20, height: h * .42, href: p.logoDataUrl, preserveAspectRatio: "xMidYMid meet" });
       } else {
