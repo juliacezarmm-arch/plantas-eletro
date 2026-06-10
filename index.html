@@ -53,7 +53,8 @@
     button.danger { color: var(--rose); }
 
     input,
-    select {
+    select,
+    textarea {
       border: 1px solid var(--line);
       border-radius: 6px;
       min-height: 34px;
@@ -61,6 +62,11 @@
       background: white;
       color: var(--ink);
       width: 100%;
+    }
+
+    textarea {
+      min-height: 86px;
+      resize: vertical;
     }
 
 
@@ -1213,6 +1219,7 @@
               <label>Nome da empresa <input id="companyName" value=""></label>
               <label>Contato da empresa <input id="companyContact" value=""></label>
               <label>Endereco da empresa <input id="companyAddress" value=""></label>
+              <label>Modificacoes da revisao <textarea id="projectModifications" placeholder="Rev. 01 - Ajuste dos pontos de tomada&#10;Rev. 02 - Revisao do quadro de cargas"></textarea></label>
             </div>
           </section>
 
@@ -1443,6 +1450,7 @@
         revision: "Rev. 01",
         area: "",
         sheetNumber: "01/01",
+        modifications: "",
         companyName: "",
         companyContact: "",
         companyAddress: "",
@@ -1474,6 +1482,7 @@
         revision: "Rev. 01",
         area: "",
         sheetNumber: "01/01",
+        modifications: "",
         companyName: "",
         companyContact: "",
         companyAddress: "",
@@ -1783,36 +1792,77 @@
       const outerMargin = Math.round(Math.min(sheet.width, sheet.height) * 0.03);
       const innerGap = Math.max(8, Math.round(Math.min(sheet.width, sheet.height) * 0.012));
       const innerMargin = outerMargin + innerGap;
-      const titleWidth = Math.min(520, Math.max(360, sheet.width * 0.42));
-      const titleHeight = Math.min(116, Math.max(82, sheet.height * 0.12));
-      const titleInset = Math.max(14, Math.round(Math.min(sheet.width, sheet.height) * 0.025));
+      const titleWidth = Math.max(320, sheet.width * 0.46);
+      const titleHeight = Math.max(80, sheet.height * 0.14);
+      const revisionHeight = Math.max(70, sheet.height * 0.12);
       return {
         sheet,
         outer: { x: outerMargin, y: outerMargin, width: sheet.width - outerMargin * 2, height: sheet.height - outerMargin * 2 },
         inner: { x: innerMargin, y: innerMargin, width: sheet.width - innerMargin * 2, height: sheet.height - innerMargin * 2 },
         title: {
-          x: sheet.width - innerMargin - titleInset - titleWidth,
-          y: sheet.height - innerMargin - titleInset - titleHeight,
+          x: sheet.width - innerMargin - titleWidth,
+          y: sheet.height - innerMargin - titleHeight,
           width: titleWidth,
           height: titleHeight
+        },
+        revisions: {
+          x: sheet.width - innerMargin - titleWidth,
+          y: sheet.height - innerMargin - titleHeight - revisionHeight,
+          width: titleWidth,
+          height: revisionHeight
         }
       };
     }
 
     function drawSheet() {
-      const { outer, inner, title } = getSheetLayout();
+      const { outer, inner, title, revisions } = getSheetLayout();
       add("rect", { x: outer.x, y: outer.y, width: outer.width, height: outer.height, fill: "white", stroke: "#222", "stroke-width": 1.8 });
       add("rect", { x: inner.x, y: inner.y, width: inner.width, height: inner.height, fill: "none", stroke: "#222", "stroke-width": 1.5 });
+      add("rect", { x: revisions.x, y: revisions.y, width: revisions.width, height: revisions.height, fill: "white", stroke: "#1f2933", "stroke-width": 1.1 });
       add("rect", { x: title.x, y: title.y, width: title.width, height: title.height, fill: "white", stroke: "#1f2933", "stroke-width": 1.2 });
     }
 
+    function drawRevisionBlock() {
+      const p = state.project;
+      const { revisions } = getSheetLayout();
+      const x = revisions.x;
+      const y = revisions.y;
+      const w = revisions.width;
+      const h = revisions.height;
+      const scale = Math.max(.9, w / 520);
+      const headerH = Math.max(18, h * .2);
+      const footerH = Math.max(16, h * .18);
+      const rowTop = y + headerH;
+      const colRev = x + w * .14;
+      const colData = x + w * .82;
+      const label = (text, tx, ty, size = 7.5) => add("text", { x: tx, y: ty, "font-size": size * scale, "font-weight": 800, fill: "#222" }).textContent = text;
+      const value = (text, tx, ty, size = 7) => add("text", { x: tx, y: ty, "font-size": size * scale, fill: "#1f2933" }).textContent = text || "";
+      add("line", { x1: x, y1: y + headerH, x2: x + w, y2: y + headerH, stroke: "#d1d7df", "stroke-width": 1 });
+      add("line", { x1: x, y1: y + h - footerH, x2: x + w, y2: y + h - footerH, stroke: "#d1d7df", "stroke-width": 1 });
+      add("line", { x1: colRev, y1: rowTop, x2: colRev, y2: y + h, stroke: "#d1d7df", "stroke-width": 1 });
+      add("line", { x1: colData, y1: rowTop, x2: colData, y2: y + h, stroke: "#d1d7df", "stroke-width": 1 });
+      label("MODIFICAÇÕES", x + 10, y + headerH * .68, 8);
+      label("REV.", x + 8, y + h - footerH * .36, 6.5);
+      label("DESCRIÇÃO", colRev + 8, y + h - footerH * .36, 6.5);
+      label("DATA", colData + 8, y + h - footerH * .36, 6.5);
+      const lines = String(p.modifications || "").split(/\n+/).map(item => item.trim()).filter(Boolean).slice(0, 4);
+      lines.forEach((line, index) => {
+        const ty = rowTop + 17 * scale + index * 15 * scale;
+        const match = line.match(/^(rev\.?\s*\d+|r\d+|\d+)\s*[-–:]?\s*(.*)$/i);
+        value(match ? match[1].replace(/^rev\.?\s*/i, "") : String(index + 1).padStart(2, "0"), x + 10, ty, 6.6);
+        value(match ? match[2] : line, colRev + 8, ty, 6.6);
+      });
+    }
+
     function drawTitleBlock() {
+      drawRevisionBlock();
       const p = state.project;
       const { title } = getSheetLayout();
       const x = title.x;
       const y = title.y;
       const w = title.width;
       const h = title.height;
+      const scale = Math.max(.9, w / 520);
       const pageW = Math.max(62, w * 0.14);
       const logoW = Math.max(104, w * 0.24);
       const dataW = w - pageW - logoW;
@@ -1824,9 +1874,9 @@
       const row4 = y + h * .70;
       const bottom = y + h;
       const revY = y + h * .78;
-      const valueX = x + 58;
-      const label = (text, tx, ty) => add("text", { x: tx, y: ty, "font-size": 7, "font-weight": 800, fill: "#222", "letter-spacing": ".2" }).textContent = text;
-      const value = (text, tx, ty, size = 9, weight = 600, anchor = "start") => add("text", { x: tx, y: ty, "font-size": size, "font-weight": weight, fill: "#1f2933", "text-anchor": anchor }).textContent = text || "";
+      const valueX = x + 58 * scale;
+      const label = (text, tx, ty) => add("text", { x: tx, y: ty, "font-size": 7 * scale, "font-weight": 800, fill: "#222", "letter-spacing": ".2" }).textContent = text;
+      const value = (text, tx, ty, size = 9, weight = 600, anchor = "start") => add("text", { x: tx, y: ty, "font-size": size * scale, "font-weight": weight, fill: "#1f2933", "text-anchor": anchor }).textContent = text || "";
 
       add("rect", { x: x + 4, y: y + 4, width: w - 8, height: h - 8, fill: "none", stroke: "#c4ccd6", "stroke-width": 1 });
       [row1, row2, row3, row4].forEach(ly => add("line", { x1: x + 4, y1: ly, x2: pageX, y2: ly, stroke: "#d1d7df", "stroke-width": 1 }));
@@ -1837,28 +1887,28 @@
       add("line", { x1: logoX, y1: y, x2: logoX, y2: bottom, stroke: "#1f2933", "stroke-width": 1.1 });
       add("line", { x1: pageX, y1: revY, x2: logoX, y2: revY, stroke: "#d1d7df", "stroke-width": 1 });
 
-      label("PROJETO:", x + 12, y + h * .13);
+      label("PROJETO:", x + 12 * scale, y + h * .13);
       value(p.title || "Planta Eletrica Residencial", valueX, y + h * .13, 8, 700);
-      label("CLIENTE:", x + 12, y + h * .30);
+      label("CLIENTE:", x + 12 * scale, y + h * .30);
       value(p.client || "", valueX, y + h * .30, 8, 600);
-      label("ENDEREÇO:", x + 12, y + h * .47);
+      label("ENDEREÇO:", x + 12 * scale, y + h * .47);
       value(p.address || "", valueX, y + h * .47, 8, 600);
-      label("ARQ. RESPONSÁVEL:", x + 12, y + h * .64);
-      value(p.designer || "", x + 104, y + h * .64, 8, 700);
-      label("DATA:", x + 12, y + h * .91);
-      value(p.date || "", x + 45, y + h * .91, 8, 600);
-      label("ÁREA:", x + dataW * .34 + 12, y + h * .91);
-      value(p.area || "", x + dataW * .34 + 45, y + h * .91, 8, 600);
-      label("ESCALA:", x + dataW * .64 + 12, y + h * .91);
-      value(p.scale || "", x + dataW * .64 + 52, y + h * .91, 8, 600);
-      label("PRANCHA:", pageX + 10, y + h * .18);
+      label("ARQ. RESPONSÁVEL:", x + 12 * scale, y + h * .64);
+      value(p.designer || "", x + 104 * scale, y + h * .64, 8, 700);
+      label("DATA:", x + 12 * scale, y + h * .91);
+      value(p.date || "", x + 45 * scale, y + h * .91, 8, 600);
+      label("ÁREA:", x + dataW * .34 + 12 * scale, y + h * .91);
+      value(p.area || "", x + dataW * .34 + 45 * scale, y + h * .91, 8, 600);
+      label("ESCALA:", x + dataW * .64 + 12 * scale, y + h * .91);
+      value(p.scale || "", x + dataW * .64 + 52 * scale, y + h * .91, 8, 600);
+      label("PRANCHA:", pageX + 10 * scale, y + h * .18);
       const sheetParts = String(p.sheetNumber || "01/01").split("/");
       const revisionText = String(p.revision || "").replace(/^rev\.?\s*/i, "");
       value(sheetParts[0] || "01", pageX + pageW * .22, y + h * .58, 30, 800);
       value("/", pageX + pageW * .58, y + h * .72, 16, 700);
       value(sheetParts[1] || "01", pageX + pageW * .74, y + h * .77, 12, 700);
-      label("REVISÃO:", pageX + 10, y + h * .91);
-      value(revisionText, pageX + 54, y + h * .91, 7, 700);
+      label("REVISÃO:", pageX + 10 * scale, y + h * .91);
+      value(revisionText, pageX + 54 * scale, y + h * .91, 7, 700);
       if (p.logoDataUrl) {
         add("image", { x: logoX + 10, y: y + 10, width: logoW - 20, height: h * .42, href: p.logoDataUrl, preserveAspectRatio: "xMidYMid meet" });
       } else {
@@ -2135,6 +2185,7 @@
       $("projectRevision").value = state.project.revision || "";
       $("projectArea").value = state.project.area || "";
       $("sheetNumber").value = state.project.sheetNumber || "01/01";
+      $("projectModifications").value = state.project.modifications || "";
       $("companyName").value = state.project.companyName || "";
       $("companyContact").value = state.project.companyContact || "";
       $("companyAddress").value = state.project.companyAddress || "";
@@ -2152,6 +2203,7 @@
       state.project.revision = $("projectRevision").value;
       state.project.area = $("projectArea").value;
       state.project.sheetNumber = $("sheetNumber").value;
+      state.project.modifications = $("projectModifications").value;
       state.project.companyName = $("companyName").value;
       state.project.companyContact = $("companyContact").value;
       state.project.companyAddress = $("companyAddress").value;
@@ -3088,7 +3140,7 @@
       if (deletePointBtn) deletePoint(deletePointBtn.dataset.deletePoint);
     });
 
-    ["projectTitle", "clientName", "projectAddress", "designerName", "projectDate", "projectRevision", "projectArea", "sheetNumber", "companyName", "companyContact", "companyAddress", "customScale", "sheetSize"].forEach(id => {
+    ["projectTitle", "clientName", "projectAddress", "designerName", "projectDate", "projectRevision", "projectArea", "sheetNumber", "projectModifications", "companyName", "companyContact", "companyAddress", "customScale", "sheetSize"].forEach(id => {
       $(id).addEventListener("focus", () => {
         $(id).dataset.beforeValue = $(id).value;
       });
