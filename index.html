@@ -97,6 +97,13 @@
       color: white;
     }
 
+    .title-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
     .brand {
       display: flex;
       align-items: center;
@@ -129,6 +136,45 @@
       font-weight: 500;
     }
 
+    .quick-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding-left: 12px;
+      border-left: 1px solid rgba(255,255,255,.28);
+    }
+
+    .quick-actions button {
+      width: 28px;
+      height: 28px;
+      min-height: 28px;
+      padding: 0;
+      border: 1px solid rgba(255,255,255,.4);
+      border-radius: 5px;
+      background: rgba(255,255,255,.1);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    .quick-icon {
+      width: 17px;
+      height: 17px;
+      display: block;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .quick-actions button:hover {
+      background: rgba(255,255,255,.18);
+      border-color: rgba(255,255,255,.75);
+    }
+
     .ribbon {
       display: grid;
       gap: 0;
@@ -136,34 +182,18 @@
       border-bottom: 1px solid #cfd6df;
     }
 
-    .tabs {
-      display: flex;
-      align-items: center;
-      height: 34px;
-      padding: 0 12px;
-      gap: 4px;
-      background: #f7f9fb;
-      border-bottom: 1px solid #d8dee6;
+    .ribbon.collapsed .toolbar {
+      display: none;
     }
 
-    .tab {
-      min-height: 28px;
-      border-radius: 6px 6px 0 0;
-      border: 0;
-      background: transparent;
-      padding: 5px 12px;
-    }
-
-    .tab.active {
-      background: white;
-      box-shadow: inset 0 3px 0 var(--teal);
-      color: #075652;
+    .ribbon.collapsed {
+      border-bottom: 1px solid #cfd6df;
     }
 
     .toolbar {
-      min-height: 54px;
+      min-height: 86px;
       display: flex;
-      align-items: center;
+      align-items: stretch;
       gap: 0;
       padding: 5px 8px;
       background: white;
@@ -173,29 +203,80 @@
     }
 
     .tool-group {
-      display: flex;
-      align-items: center;
+      display: grid;
+      grid-template-rows: 1fr 14px;
+      align-content: stretch;
+      justify-items: center;
       gap: 5px;
       padding: 0 8px;
       border-right: 1px solid #dbe1e8;
       flex: 0 0 auto;
+      min-height: 76px;
+    }
+
+    .tool-group-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      height: 100%;
+    }
+
+    .tool-group-content > label {
+      font-size: 11px;
+      gap: 4px;
+      justify-content: end;
+    }
+
+    .export-actions {
+      display: flex;
+      align-items: flex-end;
+      gap: 5px;
+      height: auto;
+      padding-top: 0;
+      align-self: center;
+    }
+
+    .export-actions button {
+      min-height: 34px;
+      align-self: flex-end;
+      margin-bottom: 0;
+    }
+
+    .export-actions label {
+      align-self: flex-end;
+    }
+
+    .group-label {
+      width: 100%;
+      height: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-top: 1px solid #eef2f6;
+      color: #2f3945;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      white-space: nowrap;
+      line-height: 1;
     }
 
     .tool-stack {
       display: grid;
-      grid-template-columns: repeat(3, 50px);
+      grid-template-columns: repeat(5, 56px);
       gap: 4px;
     }
 
     .tool {
-      width: 50px;
-      min-height: 42px;
+      width: 56px;
+      min-height: 38px;
       display: grid;
       justify-items: center;
       align-content: center;
       gap: 2px;
       padding: 3px;
-      font-size: 9px;
+      font-size: 10px;
       line-height: 1.05;
     }
 
@@ -214,16 +295,23 @@
 
     .mini-actions {
       display: grid;
-      grid-template-columns: repeat(2, 92px);
+      grid-template-columns: repeat(2, 88px);
       gap: 5px;
+    }
+
+    .mini-actions button {
+      min-height: 34px;
+      padding: 4px 8px;
+      font-size: 12px;
+      line-height: 1.15;
     }
 
     .check-grid {
       display: grid;
-      grid-template-columns: repeat(3, max-content);
+      grid-template-columns: repeat(2, max-content);
       gap: 6px 10px;
       color: #44505d;
-      font-size: 11px;
+      font-size: 12px;
       align-items: center;
     }
 
@@ -231,7 +319,7 @@
       display: flex;
       align-items: center;
       gap: 4px;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 500;
       color: #44505d;
       white-space: nowrap;
@@ -561,13 +649,8 @@
         display: none;
       }
 
-      .tabs {
-        overflow-x: auto;
-        padding: 0 6px;
-      }
-
       .tool-stack {
-        grid-template-columns: repeat(9, 48px);
+        grid-template-columns: repeat(5, 54px);
       }
 
       .check-grid {
@@ -603,79 +686,126 @@
 <body>
   <div class="app">
     <header class="titlebar">
-      <div class="brand"><span class="brand-mark"></span>EletroPlanta Studio</div>
+      <div class="title-left">
+        <div class="brand"><span class="brand-mark"></span>EletroPlanta Studio</div>
+        <div class="quick-actions" aria-label="Acoes do arquivo">
+          <button id="newProjectBtn" title="Novo projeto" aria-label="Novo projeto">
+            <svg class="quick-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5v14M5 12h14"></path>
+            </svg>
+          </button>
+          <button id="openBtn" title="Abrir projeto JSON" aria-label="Abrir projeto">
+            <svg class="quick-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path>
+              <path d="M3 11h18"></path>
+            </svg>
+          </button>
+          <button id="saveBtn" title="Salvar projeto JSON" aria-label="Salvar projeto">
+            <svg class="quick-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 4h12l2 2v14H5V4z"></path>
+              <path d="M8 4v6h8V4"></path>
+              <path d="M8 20v-6h8v6"></path>
+            </svg>
+          </button>
+          <button id="saveAsBtn" title="Salvar como JSON" aria-label="Salvar como">
+            <svg class="quick-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 4h11l2 2v5"></path>
+              <path d="M5 4v16h7"></path>
+              <path d="M8 4v6h7V4"></path>
+              <path d="M15 18l4-4 2 2-4 4h-2v-2z"></path>
+            </svg>
+          </button>
+          <button id="undoBtn" title="Desfazer ultima acao" aria-label="Desfazer">
+            <svg class="quick-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 8H5V4"></path>
+              <path d="M5.5 8.5A7 7 0 1 1 4 13"></path>
+            </svg>
+          </button>
+          <button id="redoBtn" title="Refazer acao desfeita" aria-label="Refazer">
+            <svg class="quick-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 8h4V4"></path>
+              <path d="M18.5 8.5A7 7 0 1 0 20 13"></path>
+            </svg>
+          </button>
+        </div>
+        <input id="fileInput" type="file" accept="application/json,.json" hidden>
+      </div>
       <div class="project-name" id="projectName">Projeto sem nome</div>
     </header>
 
     <section class="ribbon">
-      <nav class="tabs">
-        <button class="tab active">Arquivo</button>
-        <button class="tab">Ferramentas de Desenho</button>
-        <button class="tab">Relatorios</button>
-        <button class="tab">Exportacao</button>
-      </nav>
       <div class="toolbar">
         <div class="tool-group">
-          <div class="mini-actions">
-            <button id="newProjectBtn" title="Limpa a tela e comeca um projeto novo.">Novo</button>
-            <button id="openBtn" title="Abre um arquivo .json salvo pelo programa.">Abrir</button>
-            <button id="saveBtn" title="Baixa o projeto atual em arquivo .json.">Salvar</button>
-            <button id="saveAsBtn" title="Baixa uma nova copia do projeto em .json.">Salvar como</button>
+          <div class="tool-group-content">
+            <div class="tool-stack">
+              <button class="tool active" data-tool="select" title="Seleciona ambientes na lista e destaca na planta."><span class="tool-icon">P</span>Selecionar</button>
+              <button class="tool" id="roomBtn" title="Abre o formulario para criar um ambiente."><span class="tool-icon">A</span>Ambiente</button>
+              <button class="tool" data-tool="door" title="Adiciona uma porta no ambiente selecionado."><span class="tool-icon">D</span>Porta</button>
+              <button class="tool" data-tool="window" title="Adiciona uma janela no ambiente selecionado."><span class="tool-icon">J</span>Janela</button>
+              <button class="tool" data-tool="outlet" title="Adiciona uma tomada no ambiente selecionado."><span class="tool-icon">T</span>Tomada</button>
+              <button class="tool" data-tool="light" title="Adiciona uma luminaria no ambiente selecionado."><span class="tool-icon">L</span>Luz</button>
+              <button class="tool" data-tool="switch" title="Adiciona um interruptor no ambiente selecionado."><span class="tool-icon">I</span>Interruptor</button>
+              <button class="tool" data-tool="conduit" title="Liga pontos do mesmo circuito com linhas de eletroduto."><span class="tool-icon">E</span>Eletroduto</button>
+              <button class="tool" data-tool="panel" title="Adiciona um quadro no ambiente selecionado."><span class="tool-icon">Q</span>Quadro</button>
+            </div>
           </div>
-          <input id="fileInput" type="file" accept="application/json,.json" hidden>
+          <div class="group-label">Ferramentas de Desenho</div>
         </div>
         <div class="tool-group">
-          <div class="tool-stack">
-            <button class="tool active" data-tool="select" title="Seleciona ambientes na lista e destaca na planta."><span class="tool-icon">P</span>Selecionar</button>
-            <button class="tool" id="roomBtn" title="Abre o formulario para criar um ambiente."><span class="tool-icon">A</span>Ambiente</button>
-            <button class="tool" data-tool="door" title="Adiciona uma porta no ambiente selecionado."><span class="tool-icon">D</span>Porta</button>
-            <button class="tool" data-tool="window" title="Adiciona uma janela no ambiente selecionado."><span class="tool-icon">J</span>Janela</button>
-            <button class="tool" data-tool="outlet" title="Adiciona uma tomada no ambiente selecionado."><span class="tool-icon">T</span>Tomada</button>
-            <button class="tool" data-tool="light" title="Adiciona uma luminaria no ambiente selecionado."><span class="tool-icon">L</span>Luz</button>
-            <button class="tool" data-tool="switch" title="Adiciona um interruptor no ambiente selecionado."><span class="tool-icon">I</span>Interruptor</button>
-            <button class="tool" data-tool="panel" title="Adiciona um quadro no ambiente selecionado."><span class="tool-icon">Q</span>Quadro</button>
-            <button class="tool" data-tool="conduit" title="Liga pontos do mesmo circuito com linhas de eletroduto."><span class="tool-icon">E</span>Eletroduto</button>
+          <div class="tool-group-content">
+            <div class="check-grid">
+              <label title="Mostra ou esconde as paredes dos ambientes."><input type="checkbox" data-layer="rooms" checked> Paredes</label>
+              <label title="Mostra ou esconde portas e janelas."><input type="checkbox" data-layer="openings" checked> Portas/janelas</label>
+              <label title="Mostra ou esconde tomadas, luminarias, interruptores e quadro."><input type="checkbox" data-layer="points" checked> Pontos</label>
+              <label title="Mostra ou esconde textos, medidas e potencias."><input type="checkbox" data-layer="labels" checked> Etiquetas</label>
+              <label title="Mostra ou esconde as linhas dos circuitos."><input type="checkbox" data-layer="circuits" checked> Circuitos</label>
+              <label title="Mostra ou esconde a prancha com carimbo."><input type="checkbox" data-layer="sheet" checked> Folha</label>
+            </div>
           </div>
+          <div class="group-label">Exibir / Ocultar</div>
         </div>
         <div class="tool-group">
-          <div class="check-grid">
-            <label title="Mostra ou esconde as paredes dos ambientes."><input type="checkbox" data-layer="rooms" checked> Paredes</label>
-            <label title="Mostra ou esconde portas e janelas."><input type="checkbox" data-layer="openings" checked> Portas/janelas</label>
-            <label title="Mostra ou esconde tomadas, luminarias, interruptores e quadro."><input type="checkbox" data-layer="points" checked> Pontos</label>
-            <label title="Mostra ou esconde textos, medidas e potencias."><input type="checkbox" data-layer="labels" checked> Etiquetas</label>
-            <label title="Mostra ou esconde as linhas dos circuitos."><input type="checkbox" data-layer="circuits" checked> Circuitos</label>
-            <label title="Mostra ou esconde a prancha com carimbo."><input type="checkbox" data-layer="sheet" checked> Folha</label>
+          <div class="tool-group-content">
+            <div class="mini-actions">
+              <button id="autoOutletsBtn" title="Sugere tomadas para o ambiente selecionado usando regra demonstrativa.">NBR tomadas</button>
+              <button id="autoLightsBtn" title="Sugere iluminacao para o ambiente selecionado usando regra demonstrativa.">NBR luz</button>
+              <button id="reportBtn" title="Mostra resumo de materiais e circuitos.">Relatorios</button>
+              <button id="circuitsBtn" title="Mostra o detalhamento dos circuitos.">Circuitos</button>
+            </div>
           </div>
+          <div class="group-label">Relatorios e Calculos</div>
         </div>
         <div class="tool-group">
-          <div class="mini-actions">
-            <button id="autoOutletsBtn" title="Sugere tomadas para o ambiente selecionado usando regra demonstrativa.">NBR tomadas</button>
-            <button id="autoLightsBtn" title="Sugere iluminacao para o ambiente selecionado usando regra demonstrativa.">NBR luz</button>
-            <button id="reportBtn" title="Mostra resumo de materiais e circuitos.">Relatorios</button>
-            <button id="circuitsBtn" title="Mostra o detalhamento dos circuitos.">Circuitos</button>
+          <div class="tool-group-content">
+            <label style="width:130px">Folha
+              <select id="sheetSize">
+                <option>A4 Paisagem</option>
+                <option selected>A3 Paisagem</option>
+                <option>A2 Paisagem</option>
+                <option>A1 Paisagem</option>
+                <option>A0 Paisagem</option>
+              </select>
+            </label>
+            <label style="width:95px">Escala
+              <select id="scaleSelect">
+                <option>1:25</option>
+                <option selected>1:50</option>
+                <option>1:75</option>
+                <option>1:100</option>
+              </select>
+            </label>
+            <div class="export-actions">
+              <label style="width:95px">Formato
+                <select id="exportFormat">
+                  <option value="svg">SVG</option>
+                  <option value="ppt">PPT</option>
+                  <option value="pdf">PDF</option>
+                </select>
+              </label>
+              <button id="exportMainBtn" title="Exporta o projeto no formato escolhido.">Exportar</button>
+            </div>
           </div>
-        </div>
-        <div class="tool-group">
-          <label style="width:130px">Folha
-            <select id="sheetSize">
-              <option>A4 Paisagem</option>
-              <option selected>A3 Paisagem</option>
-              <option>A2 Paisagem</option>
-              <option>A1 Paisagem</option>
-              <option>A0 Paisagem</option>
-            </select>
-          </label>
-          <label style="width:95px">Escala
-            <select id="scaleSelect">
-              <option>1:25</option>
-              <option selected>1:50</option>
-              <option>1:75</option>
-              <option>1:100</option>
-            </select>
-          </label>
-          <button id="exportSvgBtn" title="Baixa o desenho vetorial da planta.">SVG</button>
-          <button id="exportPptBtn" title="Baixa uma prancha editavel que abre no PowerPoint.">PPT</button>
-          <button id="printBtn" title="Abre a impressao do navegador para salvar em PDF.">PDF</button>
+          <div class="group-label">Impressao e Exportacao</div>
         </div>
       </div>
     </section>
@@ -1349,6 +1479,18 @@
       toast("Prancha PPT exportada.");
     }
 
+    function exportSelectedFormat() {
+      const format = $("exportFormat").value;
+      if (format === "svg") {
+        exportSvg();
+      } else if (format === "ppt") {
+        exportPpt();
+      } else if (format === "pdf") {
+        updateFromFields();
+        window.print();
+      }
+    }
+
     function showReport() {
       const circuits = circuitSummary().map(c => `Circuito ${c.id}: ${c.power} VA (${c.count} pontos)`).join("\n");
       const materials = materialSummary().map(m => `${m.name} ${m.power}: ${m.qty}`).join("\n");
@@ -1457,21 +1599,8 @@
       });
     });
 
-    document.querySelectorAll(".tab").forEach(tabBtn => {
-      tabBtn.addEventListener("click", () => {
-        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-        tabBtn.classList.add("active");
-        const name = tabBtn.textContent.trim();
-        if (name === "Arquivo") {
-          toast("Use Novo, Abrir, Salvar e Salvar como para trabalhar com arquivos JSON.");
-        } else if (name === "Ferramentas de Desenho") {
-          toast("Use Ambiente, Porta, Janela e pontos eletricos para montar a planta.");
-        } else if (name === "Relatorios") {
-          showReport();
-        } else if (name === "Exportacao") {
-          toast("Use SVG para desenho vetorial, PPT para PowerPoint ou PDF para imprimir/salvar.");
-        }
-      });
+    document.querySelector(".ribbon").addEventListener("dblclick", () => {
+      document.querySelector(".ribbon").classList.toggle("collapsed");
     });
 
     document.querySelectorAll(".shape-btn").forEach(btn => {
@@ -1520,12 +1649,12 @@
     $("autoLightsBtn").onclick = autoLights;
     $("reportBtn").onclick = showReport;
     $("circuitsBtn").onclick = showReport;
-    $("exportSvgBtn").onclick = exportSvg;
-    $("exportPptBtn").onclick = exportPpt;
-    $("printBtn").onclick = () => { updateFromFields(); window.print(); };
+    $("exportMainBtn").onclick = exportSelectedFormat;
     $("saveBtn").onclick = () => saveProject(false).catch(err => toast(err.message));
     $("saveAsBtn").onclick = () => saveProject(true).catch(err => toast(err.message));
     $("openBtn").onclick = () => $("fileInput").click();
+    $("undoBtn").onclick = () => toast("Desfazer ainda sera implementado.");
+    $("redoBtn").onclick = () => toast("Refazer ainda sera implementado.");
     $("fileInput").onchange = (event) => event.target.files[0] && loadProject(event.target.files[0]);
     $("newProjectBtn").onclick = () => {
       state.project.rooms = [];
@@ -1550,8 +1679,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
