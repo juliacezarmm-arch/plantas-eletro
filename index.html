@@ -859,7 +859,7 @@
 
     .shape-grid {
       display: grid;
-      grid-template-columns: repeat(4, 42px);
+      grid-template-columns: repeat(5, 42px);
       gap: 8px;
       align-content: start;
     }
@@ -887,6 +887,36 @@
 
     .shape-icon.l.flip {
       transform: scaleX(-1);
+    }
+
+    .shape-icon.l.up {
+      transform: scaleY(-1);
+    }
+
+    .shape-icon.cut {
+      clip-path: polygon(0 0, 100% 0, 100% 55%, 60% 55%, 60% 100%, 0 100%);
+      background: #7d8792;
+      border: 0;
+    }
+
+    .shape-icon.soft {
+      border-radius: 9px;
+    }
+
+    .shape-hint {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .preview-title {
+      align-self: end;
+      color: #1f2933;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .2px;
     }
 
     .shape-icon.rect-wide {
@@ -1337,13 +1367,21 @@
                 <div>
                   <div class="panel-title" style="border:0;padding-left:0">Forma</div>
                   <div class="shape-grid">
-                    <button class="shape-btn active" type="button" data-shape="rect"><span class="shape-icon"></span></button>
-                    <button class="shape-btn" type="button" data-shape="rect"><span class="shape-icon rect-wide"></span></button>
-                    <button class="shape-btn" type="button" data-shape="rect"><span class="shape-icon rect-tall"></span></button>
-                    <button class="shape-btn" type="button" data-shape="l"><span class="shape-icon l"></span></button>
+                    <button class="shape-btn active" type="button" data-shape="rect" data-preset="rect" title="Retangular"><span class="shape-icon"></span></button>
+                    <button class="shape-btn" type="button" data-shape="rect" data-preset="wide" title="Retangular largo"><span class="shape-icon rect-wide"></span></button>
+                    <button class="shape-btn" type="button" data-shape="rect" data-preset="tall" title="Retangular estreito"><span class="shape-icon rect-tall"></span></button>
+                    <button class="shape-btn" type="button" data-shape="l" data-preset="l" title="Ambiente em L"><span class="shape-icon l"></span></button>
+                    <button class="shape-btn" type="button" data-shape="l" data-preset="l-flip" title="Ambiente em L espelhado"><span class="shape-icon l flip"></span></button>
+                    <button class="shape-btn" type="button" data-shape="l" data-preset="l-up" title="Ambiente em L invertido"><span class="shape-icon l up"></span></button>
+                    <button class="shape-btn" type="button" data-shape="l" data-preset="cut" title="Ambiente com recorte"><span class="shape-icon cut"></span></button>
+                    <button class="shape-btn" type="button" data-shape="rect" data-preset="bath" title="Banheiro pequeno"><span class="shape-icon soft rect-tall"></span></button>
+                    <button class="shape-btn" type="button" data-shape="rect" data-preset="hall" title="Corredor"><span class="shape-icon rect-wide"></span></button>
+                    <button class="shape-btn" type="button" data-shape="rect" data-preset="square" title="Ambiente quadrado"><span class="shape-icon soft"></span></button>
                   </div>
+                  <div class="shape-hint">Escolha um formato para preencher medidas iniciais. Depois ajuste A, B, C e D em metros.</div>
                 </div>
                 <div>
+                  <div class="preview-title">Escolha a forma e dimensione o ambiente</div>
                   <div class="preview-box">
                     <svg id="roomPreview" width="300" height="160" viewBox="0 0 300 160"></svg>
                   </div>
@@ -1358,12 +1396,14 @@
             </section>
 
             <section class="room-page hidden" data-page="walls">
+              <div class="shape-hint">As paredes sao numeradas no sentido horario. Use estes numeros para encaixar portas, janelas, pontos eletricos e novos ambientes.</div>
               <div class="preview-box">
                 <svg id="wallPreview" width="300" height="160" viewBox="0 0 300 160"></svg>
               </div>
             </section>
 
             <section class="room-page hidden" data-page="position">
+              <div class="shape-hint">Escolha uma parede existente e a parede do novo ambiente que deve encostar nela. Depois ajuste deslocamento e rotacao.</div>
               <div class="cols-2">
                 <label>Colar em ambiente <select id="attachRoom"></select></label>
                 <label>Parede do ambiente <select id="attachWall"></select></label>
@@ -1581,7 +1621,15 @@
         pts = room.points;
       } else if (room.shape === "l") {
         const a = m.a * PX, b = m.b * PX, c = m.c * PX, d = m.d * PX;
-        pts = [
+        const variant = room.variant || "l";
+        pts = variant === "cut" ? [
+          [0, 0],
+          [a, 0],
+          [a, d],
+          [c, d],
+          [c, b],
+          [0, b]
+        ] : [
           [0, 0],
           [c, 0],
           [c, d],
@@ -1589,6 +1637,8 @@
           [a, b],
           [0, b]
         ];
+        if (variant === "l-flip") pts = pts.map(([x, y]) => [a - x, y]);
+        if (variant === "l-up") pts = pts.map(([x, y]) => [x, b - y]);
       } else {
         pts = [
           [0, 0],
@@ -1655,6 +1705,11 @@
       return showUnit ? `${text}m` : text;
     }
 
+    function formatNumber(value) {
+      const number = Number(value) || 0;
+      return number.toFixed(2).replace(/\.?0+$/, "");
+    }
+
     function formatAreaM2(valueM2) {
       return `${valueM2.toFixed(2)}m²`;
     }
@@ -1706,7 +1761,7 @@
     function attachRoomPosition(formData) {
       const target = state.project.rooms.find(r => r.id === formData.attachRoomId);
       if (!target || state.editingRoomId) return null;
-      const draft = { x: 0, y: 0, shape: formData.shape, measures: formData.measures, rotation: formData.rotation };
+      const draft = { x: 0, y: 0, shape: formData.shape, variant: formData.variant, measures: formData.measures, rotation: formData.rotation };
       const targetSeg = wallSegment(target, formData.attachWall);
       const draftSeg = wallSegment(draft, formData.newWall);
       const targetMid = segmentMidpoint(targetSeg);
@@ -2394,12 +2449,33 @@
       const wantedShape = shape === "poly" ? "rect" : shape;
       let activated = false;
       document.querySelectorAll(".shape-btn").forEach(btn => {
-        const shouldActivate = !activated && btn.dataset.shape === wantedShape;
+        const shouldActivate = !activated && (btn.dataset.preset === wantedShape || btn.dataset.shape === wantedShape);
         btn.classList.toggle("active", shouldActivate);
         if (shouldActivate) activated = true;
       });
       if (!activated) document.querySelector('.shape-btn[data-shape="rect"]')?.classList.add("active");
       updatePreview();
+    }
+
+    function applyShapePreset(preset) {
+      const presets = {
+        rect: { a: 4.35, b: 3.45, c: 2.8, d: 2.55 },
+        wide: { a: 5.15, b: 3.0, c: 2.8, d: 2.55 },
+        tall: { a: 2.4, b: 4.2, c: 2.8, d: 2.55 },
+        square: { a: 3.2, b: 3.2, c: 2.8, d: 2.55 },
+        bath: { a: 1.4, b: 2.4, c: 2.8, d: 2.55 },
+        hall: { a: 3.2, b: .9, c: 2.8, d: 2.55 },
+        l: { a: 4.35, b: 3.45, c: 2.8, d: 2.55 },
+        "l-flip": { a: 4.35, b: 3.45, c: 2.8, d: 2.55 },
+        "l-up": { a: 4.35, b: 3.45, c: 2.8, d: 2.55 },
+        cut: { a: 4.35, b: 3.45, c: 2.1, d: 1.55 }
+      };
+      const values = presets[preset];
+      if (!values) return;
+      $("measureA").value = values.a;
+      $("measureB").value = values.b;
+      $("measureC").value = values.c;
+      $("measureD").value = values.d;
     }
 
     function openRoomDialog(roomId = null) {
@@ -2419,7 +2495,7 @@
         $("positionAngle").value = Number(room.rotation || 0);
         $("roomLabelText").value = room.label || "";
         $("roomShowArea").value = room.showArea === false ? "no" : "yes";
-        setActiveShape(room.shape || "rect");
+        setActiveShape(room.variant || room.shape || "rect");
       } else {
         const next = state.project.rooms.length + 1;
         $("roomName").value = `Quarto ${String(next).padStart(2, "0")}`;
@@ -2492,13 +2568,18 @@
     function updatePreview() {
       const svg = $("roomPreview");
       svg.innerHTML = "";
-      const shape = document.querySelector(".shape-btn.active").dataset.shape;
+      const activeShapeBtn = document.querySelector(".shape-btn.active");
+      const shape = activeShapeBtn.dataset.shape;
+      const preset = activeShapeBtn.dataset.preset || shape;
       document.querySelectorAll(".l-only").forEach(field => {
         field.classList.toggle("field-hidden", shape !== "l");
       });
-      const pts = shape === "l"
-        ? [[70,25],[155,25],[155,75],[235,75],[235,130],[70,130]]
-        : [[65,35],[235,35],[235,125],[65,125]];
+      let pts = shape === "l"
+        ? [[68,26],[158,26],[158,74],[236,74],[236,130],[68,130]]
+        : [[66,38],[234,38],[234,126],[66,126]];
+      if (preset === "l-flip") pts = pts.map(([x, y]) => [304 - x, y]);
+      if (preset === "l-up") pts = pts.map(([x, y]) => [x, 156 - y]);
+      if (preset === "cut") pts = [[68,26],[236,26],[236,82],[166,82],[166,130],[68,130]];
       const poly = document.createElementNS(NS, "polygon");
       poly.setAttribute("points", pts.map(p => p.join(",")).join(" "));
       poly.setAttribute("fill", "#dff4f0");
@@ -2512,24 +2593,45 @@
       t.setAttribute("font-size", "12");
       t.textContent = shape === "l" ? "Ambiente em L" : "Ambiente retangular";
       svg.appendChild(t);
-      const labels = shape === "l"
-        ? [
-          ["C", 112, 18], ["D", 246, 104], ["A", 152, 146], ["B", 56, 82]
-        ]
-        : [
-          ["A", 150, 145], ["B", 48, 82]
-        ];
-      labels.forEach(([text, x, y]) => {
+      function svgLine(x1, y1, x2, y2) {
+        const line = document.createElementNS(NS, "line");
+        line.setAttribute("x1", x1);
+        line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2);
+        line.setAttribute("y2", y2);
+        line.setAttribute("stroke", "#697586");
+        line.setAttribute("stroke-width", "1");
+        svg.appendChild(line);
+      }
+      function svgLabel(text, x, y, size = 13, weight = 800) {
         const item = document.createElementNS(NS, "text");
         item.setAttribute("x", x);
         item.setAttribute("y", y);
         item.setAttribute("text-anchor", "middle");
-        item.setAttribute("font-size", "14");
-        item.setAttribute("font-weight", "800");
+        item.setAttribute("font-size", size);
+        item.setAttribute("font-weight", weight);
         item.setAttribute("fill", "#4b5563");
         item.textContent = text;
         svg.appendChild(item);
-      });
+      }
+      const a = Number($("measureA").value || 0);
+      const b = Number($("measureB").value || 0);
+      const c = Number($("measureC").value || 0);
+      const d = Number($("measureD").value || 0);
+      const minX = Math.min(...pts.map(p => p[0]));
+      const maxX = Math.max(...pts.map(p => p[0]));
+      const minY = Math.min(...pts.map(p => p[1]));
+      const maxY = Math.max(...pts.map(p => p[1]));
+      svgLine(minX, maxY + 10, maxX, maxY + 10);
+      svgLine(minX - 10, minY, minX - 10, maxY);
+      svgLabel(`A ${formatNumber(a)}`, (minX + maxX) / 2, maxY + 25, 12, 800);
+      svgLabel(`B ${formatNumber(b)}`, minX - 25, (minY + maxY) / 2, 12, 800);
+      if (shape === "l") {
+        svgLine(pts[0][0], minY - 9, pts[1][0], minY - 9);
+        svgLabel(`C ${formatNumber(c)}`, (pts[0][0] + pts[1][0]) / 2, minY - 15, 11, 800);
+        svgLine(maxX + 9, pts[3][1], maxX + 9, maxY);
+        svgLabel(`D ${formatNumber(d)}`, maxX + 28, (pts[3][1] + maxY) / 2, 11, 800);
+      }
       updateWallPreview();
       populateRoomPositionFields();
     }
@@ -2543,6 +2645,7 @@
         x: 55,
         y: 25,
         shape,
+        variant: document.querySelector(".shape-btn.active")?.dataset.preset || shape,
         rotation: Number($("roomRotation")?.value || 0),
         measures: {
           a: shape === "l" ? 2.6 : 2.8,
@@ -2583,9 +2686,9 @@
       });
     }
 
-    function nextRoomPosition(measures = { a: 4.35, b: 3.45, c: 0, d: 0 }, shape = "rect") {
+    function nextRoomPosition(measures = { a: 4.35, b: 3.45, c: 0, d: 0 }, shape = "rect", variant = shape) {
       const selected = selectedRoom();
-      const temp = { x: 0, y: 0, shape, measures };
+      const temp = { x: 0, y: 0, shape, variant, measures };
       const size = roomBounds(temp);
       const existing = state.project.rooms.map(roomBounds);
       const candidates = [];
@@ -2612,12 +2715,13 @@
       pushHistory();
       const editing = state.project.rooms.find(r => r.id === state.editingRoomId);
       const attachedPos = attachRoomPosition(formData);
-      const pos = editing ? { x: editing.x, y: editing.y } : (attachedPos || nextRoomPosition(formData.measures, formData.shape));
+      const pos = editing ? { x: editing.x, y: editing.y } : (attachedPos || nextRoomPosition(formData.measures, formData.shape, formData.variant));
       const room = {
         id: editing?.id || uid(),
         name: formData.name,
         category: formData.category,
         shape: editing?.shape === "poly" ? "poly" : formData.shape,
+        variant: editing?.shape === "poly" ? editing.variant : formData.variant,
         x: pos.x,
         y: pos.y,
         rotation: formData.rotation,
@@ -3131,6 +3235,7 @@
       btn.addEventListener("click", () => {
         document.querySelectorAll(".shape-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
+        applyShapePreset(btn.dataset.preset);
         updatePreview();
       });
     });
@@ -3368,11 +3473,13 @@
     $("cancelRoom").onclick = closeRoomDialog;
     $("roomForm").onsubmit = (event) => {
       event.preventDefault();
-      const shape = document.querySelector(".shape-btn.active")?.dataset.shape || "rect";
+      const activeShape = document.querySelector(".shape-btn.active");
+      const shape = activeShape?.dataset.shape || "rect";
       createRoom({
         name: $("roomName").value,
         category: $("roomCategory").value,
         shape,
+        variant: activeShape?.dataset.preset || shape,
         rotation: Number($("roomRotation").value || 0),
         attachRoomId: $("attachRoom").value,
         attachWall: Number($("attachWall").value || 1),
