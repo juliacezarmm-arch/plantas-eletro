@@ -495,11 +495,13 @@
       min-height: 0;
       height: 100%;
       max-height: 100%;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
       border-left: 1px solid #cfd6df;
       background: #f8fafc;
       display: grid;
       grid-template-rows: auto 1fr;
+      scrollbar-gutter: stable;
     }
 
     .workspace.side-collapsed .side-body,
@@ -583,16 +585,20 @@
 
     .side-body {
       min-height: 0;
-      height: 100%;
-      max-height: 100%;
-      overflow-y: scroll;
+      height: auto;
+      max-height: calc(100vh - 190px);
+      overflow-y: auto;
       overflow-x: hidden;
       padding: 14px;
       display: grid;
       align-content: start;
       gap: 14px;
       scrollbar-gutter: stable;
-      padding-bottom: 40px;
+      padding-bottom: 96px;
+    }
+
+    .side-section[data-section="project"] .panel-body {
+      padding-bottom: 52px;
     }
 
     .panel.hidden {
@@ -1700,50 +1706,51 @@
 
     function drawSheet() {
       add("rect", { x: 36, y: 36, width: 1050, height: 690, fill: "none", stroke: "#222", "stroke-width": 2 });
-      add("rect", { x: 58, y: 600, width: 1006, height: 104, fill: "white", stroke: "#b8c1cc", "stroke-width": 1 });
-      [616, 632, 648].forEach(y => add("line", { x1: 58, y1: y, x2: 760, y2: y, stroke: "#d1d7df", "stroke-width": 1 }));
-      add("line", { x1: 58, y1: 672, x2: 760, y2: 672, stroke: "#d1d7df", "stroke-width": 1 });
-      add("line", { x1: 210, y1: 672, x2: 210, y2: 704, stroke: "#d1d7df", "stroke-width": 1 });
-      add("line", { x1: 340, y1: 672, x2: 340, y2: 704, stroke: "#d1d7df", "stroke-width": 1 });
-      add("line", { x1: 475, y1: 672, x2: 475, y2: 704, stroke: "#d1d7df", "stroke-width": 1 });
-      add("line", { x1: 760, y1: 600, x2: 760, y2: 704, stroke: "#b8c1cc", "stroke-width": 1 });
-      add("line", { x1: 850, y1: 600, x2: 850, y2: 704, stroke: "#b8c1cc", "stroke-width": 1 });
-      [616, 632, 648].forEach(y => add("line", { x1: 850, y1: y, x2: 1064, y2: y, stroke: "#d1d7df", "stroke-width": 1 }));
+      add("rect", { x: 622, y: 608, width: 444, height: 96, fill: "white", stroke: "#1f2933", "stroke-width": 1.2 });
+      add("rect", { x: 626, y: 612, width: 436, height: 88, fill: "none", stroke: "#c4ccd6", "stroke-width": 1 });
+      [628, 644, 660].forEach(y => add("line", { x1: 626, y1: y, x2: 894, y2: y, stroke: "#d1d7df", "stroke-width": 1 }));
+      add("line", { x1: 626, y1: 676, x2: 894, y2: 676, stroke: "#d1d7df", "stroke-width": 1 });
+      add("line", { x1: 714, y1: 676, x2: 714, y2: 700, stroke: "#d1d7df", "stroke-width": 1 });
+      add("line", { x1: 792, y1: 676, x2: 792, y2: 700, stroke: "#d1d7df", "stroke-width": 1 });
+      add("line", { x1: 894, y1: 612, x2: 894, y2: 700, stroke: "#1f2933", "stroke-width": 1 });
+      add("line", { x1: 956, y1: 612, x2: 956, y2: 700, stroke: "#c4ccd6", "stroke-width": 1 });
+      [628, 644, 660, 676].forEach(y => add("line", { x1: 956, y1: y, x2: 1062, y2: y, stroke: "#d1d7df", "stroke-width": 1 }));
     }
 
     function drawTitleBlock() {
       const p = state.project;
       const label = (text, x, y) => add("text", { x, y, "font-size": 7, "font-weight": 800, fill: "#222", "letter-spacing": ".2" }).textContent = text;
       const value = (text, x, y, size = 10, weight = 600) => add("text", { x, y, "font-size": size, "font-weight": weight, fill: "#1f2933" }).textContent = text || "";
-      label("PROJETO:", 66, 612);
-      value(p.title || "Planta Eletrica Residencial", 116, 612, 9, 700);
-      label("CLIENTE:", 66, 628);
-      value(p.client || "", 116, 628, 9, 600);
-      label("ENDERECO:", 66, 644);
-      value(p.address || "", 122, 644, 9, 600);
-      label("ARQ. RESPONSAVEL:", 66, 668);
-      value(p.designer || "", 162, 668, 9, 700);
-      label("DATA:", 66, 691);
-      value(p.date || "", 96, 691, 8, 600);
-      label("AREA:", 220, 691);
-      value(p.area || "", 250, 691, 8, 600);
-      label("ESCALA:", 350, 691);
-      value(p.scale || "", 390, 691, 8, 600);
-      label("PRANCHA:", 773, 616);
+      label("PROJETO:", 634, 624);
+      value(p.title || "Planta Eletrica Residencial", 684, 624, 8, 700);
+      label("CLIENTE:", 634, 640);
+      value(p.client || "", 684, 640, 8, 600);
+      label("ENDERECO:", 634, 656);
+      value(p.address || "", 690, 656, 8, 600);
+      label("ARQ. RESPONSAVEL:", 634, 672);
+      value(p.designer || "", 726, 672, 8, 700);
+      label("DATA:", 634, 694);
+      value(p.date || "", 666, 694, 8, 600);
+      label("AREA:", 724, 694);
+      value(p.area || "", 754, 694, 8, 600);
+      label("ESCALA:", 802, 694);
+      value(p.scale || "", 842, 694, 8, 600);
+      label("PRANCHA:", 904, 624);
       const sheetParts = String(p.sheetNumber || "01/01").split("/");
-      value(sheetParts[0] || "01", 774, 662, 34, 800);
-      value("/", 815, 686, 18, 700);
-      value(sheetParts[1] || "01", 828, 690, 13, 700);
-      label("REV:", 773, 699);
-      value(p.revision || "", 794, 699, 7, 700);
+      const revisionText = String(p.revision || "").replace(/^rev\.?\s*/i, "");
+      value(sheetParts[0] || "01", 904, 662, 30, 800);
+      value("/", 936, 686, 16, 700);
+      value(sheetParts[1] || "01", 947, 690, 12, 700);
+      label("REVISAO:", 904, 699);
+      value(revisionText, 944, 699, 7, 700);
       if (p.logoDataUrl) {
-        add("image", { x: 870, y: 610, width: 174, height: 38, href: p.logoDataUrl, preserveAspectRatio: "xMidYMid meet" });
+        add("image", { x: 966, y: 616, width: 86, height: 34, href: p.logoDataUrl, preserveAspectRatio: "xMidYMid meet" });
       } else {
-        value(p.companyName || "EMPRESA", 870, 636, 16, 800);
+        value(p.companyName || "EMPRESA", 968, 638, 14, 800);
       }
-      value(p.companyName || "", 870, 662, 8, 700);
-      value(p.companyContact || "", 870, 680, 7, 500);
-      value(p.companyAddress || "", 870, 696, 7, 500);
+      value(p.companyName || "", 966, 666, 7, 700);
+      value(p.companyContact || "", 966, 682, 6.5, 500);
+      value(p.companyAddress || "", 966, 696, 6.5, 500);
     }
 
     function drawRoom(room) {
