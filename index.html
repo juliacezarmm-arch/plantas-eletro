@@ -325,6 +325,26 @@
       white-space: nowrap;
     }
 
+    .model-options {
+      display: grid;
+      grid-template-columns: repeat(2, 120px);
+      gap: 6px;
+      align-items: end;
+      padding-left: 8px;
+      border-left: 1px solid #e3e8ef;
+    }
+
+    .model-options label {
+      font-size: 11px;
+      gap: 4px;
+    }
+
+    .model-options select {
+      min-height: 30px;
+      padding: 4px 7px;
+      font-size: 12px;
+    }
+
     .workspace {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
@@ -343,10 +363,42 @@
       min-width: 0;
       min-height: 0;
       overflow: hidden;
-      background:
-        linear-gradient(#e5eaf0 1px, transparent 1px),
-        linear-gradient(90deg, #e5eaf0 1px, transparent 1px);
+      --model-bg: #eef2f5;
+      --model-grid: #dfe6ee;
+      background-color: var(--model-bg);
+      background-image:
+        linear-gradient(var(--model-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--model-grid) 1px, transparent 1px);
       background-size: 24px 24px;
+    }
+
+    .workspace.grid-dots .canvas-shell {
+      background-image: radial-gradient(circle, var(--model-grid) 1.2px, transparent 1.2px);
+      background-size: 18px 18px;
+    }
+
+    .workspace.bg-white .canvas-shell {
+      --model-bg: #ffffff;
+      --model-grid: #d6dce4;
+    }
+
+    .workspace.bg-gray .canvas-shell {
+      --model-bg: #eef2f5;
+      --model-grid: #dfe6ee;
+    }
+
+    .workspace.bg-black .canvas-shell {
+      --model-bg: #101418;
+      --model-grid: #3d4652;
+    }
+
+    .workspace.bg-black .canvas-top {
+      background: rgba(18, 24, 31, .92);
+      border-bottom-color: #3d4652;
+    }
+
+    .workspace.bg-black .status {
+      color: #d8dee7;
     }
 
     .canvas-top {
@@ -945,6 +997,21 @@
               <label title="Mostra ou esconde as linhas dos circuitos."><input type="checkbox" data-layer="circuits" checked> Circuitos</label>
               <label title="Mostra ou esconde a prancha com carimbo."><input type="checkbox" data-layer="sheet" checked> Folha</label>
             </div>
+            <div class="model-options">
+              <label>Fundo
+                <select id="modelGridType">
+                  <option value="grid">Quadriculado</option>
+                  <option value="dots">Pontos</option>
+                </select>
+              </label>
+              <label>Tema
+                <select id="modelTheme">
+                  <option value="gray" selected>Cinza</option>
+                  <option value="white">Branco</option>
+                  <option value="black">Preto</option>
+                </select>
+              </label>
+            </div>
           </div>
           <div class="group-label">Exibir / Ocultar</div>
         </div>
@@ -1225,6 +1292,8 @@
       editingPointId: null,
       previewPoint: null,
       zoom: 1,
+      modelGridType: "grid",
+      modelTheme: "gray",
       undoStack: [],
       redoStack: [],
       layers: { rooms: true, openings: true, points: true, labels: true, circuits: true, sheet: true },
@@ -1257,7 +1326,7 @@
     }
 
     function normalizeProject(project) {
-      return {
+      const normalized = {
         title: "Planta Eletrica Residencial",
         client: "Cliente",
         address: "Rua da Aurora, Recife - PE",
@@ -1280,6 +1349,9 @@
         openings: Array.isArray(project?.openings) ? project.openings : [],
         points: Array.isArray(project?.points) ? project.points : []
       };
+      if (project?.modelGridType) state.modelGridType = project.modelGridType;
+      if (project?.modelTheme) state.modelTheme = project.modelTheme;
+      return normalized;
     }
 
     function restoreSnapshot(snapshot) {
@@ -1543,6 +1615,7 @@
 
     function render() {
       clearSvg();
+      applyModelAppearance();
       if (state.layers.sheet) drawSheet();
       if (state.layers.rooms) state.project.rooms.forEach(drawRoom);
       if (state.layers.openings) state.project.openings.forEach(drawOpening);
@@ -2289,7 +2362,7 @@
 
     async function saveProject(saveAs = false) {
       updateFromFields();
-      const text = JSON.stringify(state.project, null, 2);
+      const text = JSON.stringify({ ...state.project, modelGridType: state.modelGridType, modelTheme: state.modelTheme }, null, 2);
       if ("showSaveFilePicker" in window) {
         if (!state.fileHandle || saveAs) {
           state.fileHandle = await window.showSaveFilePicker({
@@ -2316,6 +2389,7 @@
         state.fileHandle = handle;
         state.currentFileName = handle?.name || file.name || "";
         state.selectedRoomId = state.project.rooms[0]?.id || null;
+        applyModelAppearance();
         render();
         toast("Projeto aberto.");
       };
@@ -2524,6 +2598,28 @@
       });
     });
 
+    function applyModelAppearance() {
+      const workspace = $("workspace");
+      workspace.classList.toggle("grid-dots", state.modelGridType === "dots");
+      workspace.classList.toggle("bg-white", state.modelTheme === "white");
+      workspace.classList.toggle("bg-gray", state.modelTheme === "gray");
+      workspace.classList.toggle("bg-black", state.modelTheme === "black");
+      $("modelGridType").value = state.modelGridType;
+      $("modelTheme").value = state.modelTheme;
+    }
+
+    $("modelGridType").addEventListener("change", () => {
+      state.modelGridType = $("modelGridType").value;
+      applyModelAppearance();
+      applyZoom();
+    });
+
+    $("modelTheme").addEventListener("change", () => {
+      state.modelTheme = $("modelTheme").value;
+      applyModelAppearance();
+      applyZoom();
+    });
+
     function showSideSection(section) {
       document.querySelectorAll(".side-tab").forEach(tab => {
         tab.classList.toggle("active", tab.dataset.sideSection === section);
@@ -2535,7 +2631,8 @@
 
     function applyZoom() {
       document.querySelector(".sheet").style.zoom = state.zoom;
-      $("statusText").textContent = `Ferramenta: ${document.querySelector(".tool.active")?.textContent.trim() || "Selecionar"} | Zoom ${Math.round(state.zoom * 100)}%`;
+      const gridName = state.modelGridType === "dots" ? "pontos" : "quadriculado";
+      $("statusText").textContent = `Ferramenta: ${document.querySelector(".tool.active")?.textContent.trim() || "Selecionar"} | Modelo: ${gridName} ${state.modelTheme} | Zoom ${Math.round(state.zoom * 100)}%`;
     }
 
     const stageWrap = document.querySelector(".stage-wrap");
@@ -2710,6 +2807,7 @@
       }
     });
 
+    applyModelAppearance();
     render();
     applyZoom();
   </script>
