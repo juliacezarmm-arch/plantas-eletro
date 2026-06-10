@@ -1033,6 +1033,9 @@
                 <label>Area <input id="projectArea" value=""></label>
                 <label>Prancha <input id="sheetNumber" value="01/01"></label>
               </div>
+              <label>Nome da empresa <input id="companyName" value=""></label>
+              <label>Contato da empresa <input id="companyContact" value=""></label>
+              <label>Endereco da empresa <input id="companyAddress" value=""></label>
             </div>
           </section>
 
@@ -1226,6 +1229,9 @@
         revision: "Rev. 01",
         area: "",
         sheetNumber: "01/01",
+        companyName: "",
+        companyContact: "",
+        companyAddress: "",
         logoDataUrl: "",
         scale: "1:50",
         sheet: "A3 Paisagem",
@@ -1252,6 +1258,9 @@
         revision: "Rev. 01",
         area: "",
         sheetNumber: "01/01",
+        companyName: "",
+        companyContact: "",
+        companyAddress: "",
         logoDataUrl: "",
         scale: "1:50",
         sheet: "A3 Paisagem",
@@ -1539,45 +1548,51 @@
 
     function drawSheet() {
       add("rect", { x: 36, y: 36, width: 1050, height: 690, fill: "none", stroke: "#222", "stroke-width": 2 });
-      add("rect", { x: 58, y: 628, width: 1006, height: 76, fill: "white", stroke: "#b8c1cc", "stroke-width": 1 });
-      [645, 662, 679].forEach(y => add("line", { x1: 58, y1: y, x2: 1064, y2: y, stroke: "#d1d7df", "stroke-width": 1 }));
-      add("line", { x1: 58, y1: 679, x2: 58, y2: 704, stroke: "#b8c1cc" });
-      add("line", { x1: 315, y1: 679, x2: 315, y2: 704, stroke: "#d1d7df" });
-      add("line", { x1: 445, y1: 679, x2: 445, y2: 704, stroke: "#d1d7df" });
-      add("line", { x1: 575, y1: 679, x2: 575, y2: 704, stroke: "#d1d7df" });
-      add("line", { x1: 705, y1: 628, x2: 705, y2: 704, stroke: "#d1d7df" });
-      add("line", { x1: 830, y1: 628, x2: 830, y2: 704, stroke: "#d1d7df" });
+      add("rect", { x: 430, y: 628, width: 634, height: 76, fill: "white", stroke: "#b8c1cc", "stroke-width": 1 });
+      [645, 662, 679].forEach(y => add("line", { x1: 430, y1: y, x2: 870, y2: y, stroke: "#d1d7df", "stroke-width": 1 }));
+      add("line", { x1: 430, y1: 679, x2: 870, y2: 679, stroke: "#d1d7df" });
+      add("line", { x1: 545, y1: 679, x2: 545, y2: 704, stroke: "#d1d7df" });
+      add("line", { x1: 650, y1: 679, x2: 650, y2: 704, stroke: "#d1d7df" });
+      add("line", { x1: 760, y1: 679, x2: 760, y2: 704, stroke: "#d1d7df" });
+      add("rect", { x: 870, y: 628, width: 72, height: 76, fill: "white", stroke: "#b8c1cc", "stroke-width": 1 });
+      add("line", { x1: 942, y1: 628, x2: 942, y2: 704, stroke: "#d1d7df" });
+      add("rect", { x: 942, y: 628, width: 122, height: 76, fill: "white", stroke: "#b8c1cc", "stroke-width": 1 });
+      [645, 662, 679].forEach(y => add("line", { x1: 942, y1: y, x2: 1064, y2: y, stroke: "#d1d7df", "stroke-width": 1 }));
     }
 
     function drawTitleBlock() {
       const p = state.project;
       const label = (text, x, y) => add("text", { x, y, "font-size": 7, "font-weight": 800, fill: "#222", "letter-spacing": ".2" }).textContent = text;
       const value = (text, x, y, size = 10, weight = 600) => add("text", { x, y, "font-size": size, "font-weight": weight, fill: "#1f2933" }).textContent = text || "";
-      label("PROJETO:", 66, 641);
-      value(p.title || "Planta Eletrica Residencial", 112, 641, 9, 700);
-      label("CLIENTE:", 66, 658);
-      value(p.client || "", 112, 658, 9, 600);
-      label("ENDERECO:", 66, 675);
-      value(p.address || "", 118, 675, 9, 600);
-      label("ARQ. RESPONSAVEL:", 66, 694);
-      value(p.designer || "", 150, 694, 9, 700);
-      label("DATA:", 324, 694);
-      value(p.date || "", 350, 694, 8, 600);
-      label("AREA:", 454, 694);
-      value(p.area || "", 482, 694, 8, 600);
-      label("ESCALA:", 584, 694);
-      value(p.scale || "", 620, 694, 8, 600);
-      label("PRANCHA:", 715, 649);
-      value(p.sheetNumber || "01/01", 715, 666, 18, 800);
-      label("REVISAO:", 715, 691);
-      value(p.revision || "", 755, 691, 8, 700);
+      label("PROJETO:", 440, 641);
+      value(p.title || "Planta Eletrica Residencial", 486, 641, 9, 700);
+      label("CLIENTE:", 440, 658);
+      value(p.client || "", 486, 658, 9, 600);
+      label("ENDERECO:", 440, 675);
+      value(p.address || "", 492, 675, 9, 600);
+      label("ARQ. RESPONSAVEL:", 440, 694);
+      value(p.designer || "", 522, 694, 9, 700);
+      label("DATA:", 553, 694);
+      value(p.date || "", 580, 694, 8, 600);
+      label("AREA:", 658, 694);
+      value(p.area || "", 686, 694, 8, 600);
+      label("ESCALA:", 768, 694);
+      value(p.scale || "", 805, 694, 8, 600);
+      label("PRANCHA:", 879, 641);
+      const sheetParts = String(p.sheetNumber || "01/01").split("/");
+      value(sheetParts[0] || "01", 878, 675, 28, 800);
+      value("/", 908, 687, 18, 700);
+      value(sheetParts[1] || "01", 916, 691, 12, 700);
+      label("REV:", 879, 699);
+      value(p.revision || "", 900, 699, 7, 700);
       if (p.logoDataUrl) {
-        add("image", { x: 846, y: 641, width: 95, height: 38, href: p.logoDataUrl, preserveAspectRatio: "xMidYMid meet" });
+        add("image", { x: 951, y: 633, width: 104, height: 28, href: p.logoDataUrl, preserveAspectRatio: "xMidYMid meet" });
       } else {
-        value("ELETROPLANTA", 846, 661, 16, 800);
+        value(p.companyName || "EMPRESA", 952, 657, 14, 800);
       }
-      value("Projeto eletrico residencial", 846, 681, 8, 600);
-      value("Contato / empresa", 846, 693, 7, 500);
+      value(p.companyName || "", 952, 674, 8, 700);
+      value(p.companyContact || "", 952, 687, 7, 500);
+      value(p.companyAddress || "", 952, 699, 7, 500);
     }
 
     function drawRoom(room) {
@@ -1825,6 +1840,9 @@
       $("projectRevision").value = state.project.revision || "";
       $("projectArea").value = state.project.area || "";
       $("sheetNumber").value = state.project.sheetNumber || "01/01";
+      $("companyName").value = state.project.companyName || "";
+      $("companyContact").value = state.project.companyContact || "";
+      $("companyAddress").value = state.project.companyAddress || "";
       $("scaleSelect").value = state.project.scale;
       $("sheetSize").value = state.project.sheet;
     }
@@ -1838,6 +1856,9 @@
       state.project.revision = $("projectRevision").value;
       state.project.area = $("projectArea").value;
       state.project.sheetNumber = $("sheetNumber").value;
+      state.project.companyName = $("companyName").value;
+      state.project.companyContact = $("companyContact").value;
+      state.project.companyAddress = $("companyAddress").value;
       state.project.scale = $("scaleSelect").value;
       state.project.sheet = $("sheetSize").value;
     }
@@ -2565,7 +2586,7 @@
       if (deletePointBtn) deletePoint(deletePointBtn.dataset.deletePoint);
     });
 
-    ["projectTitle", "clientName", "projectAddress", "designerName", "projectDate", "projectRevision", "projectArea", "sheetNumber", "scaleSelect", "sheetSize"].forEach(id => {
+    ["projectTitle", "clientName", "projectAddress", "designerName", "projectDate", "projectRevision", "projectArea", "sheetNumber", "companyName", "companyContact", "companyAddress", "scaleSelect", "sheetSize"].forEach(id => {
       $(id).addEventListener("focus", () => {
         $(id).dataset.beforeValue = $(id).value;
       });
