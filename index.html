@@ -1144,15 +1144,7 @@
                 <option>A0 Paisagem</option>
               </select>
             </label>
-            <label style="width:95px">Escala
-              <select id="scaleSelect">
-                <option>1:25</option>
-                <option selected>1:50</option>
-                <option>1:75</option>
-                <option>1:100</option>
-              </select>
-            </label>
-            <label style="width:90px">1 :
+            <label style="width:90px">Escala 1 :
               <input id="customScale" type="number" min="1" step="1" value="50">
             </label>
             <div class="export-actions">
@@ -1417,6 +1409,13 @@
   <script>
     const NS = "http://www.w3.org/2000/svg";
     const PX = 70;
+    const SHEET_SIZES = {
+      "A4 Paisagem": { width: 794, height: 561 },
+      "A3 Paisagem": { width: 1122, height: 794 },
+      "A2 Paisagem": { width: 1587, height: 1122 },
+      "A1 Paisagem": { width: 2245, height: 1587 },
+      "A0 Paisagem": { width: 3175, height: 2245 }
+    };
     const state = {
       fileHandle: null,
       currentFileName: "",
@@ -1775,53 +1774,99 @@
       syncProjectFields();
     }
 
+    function getSheetSpec() {
+      return SHEET_SIZES[state.project.sheet] || SHEET_SIZES["A3 Paisagem"];
+    }
+
+    function getSheetLayout() {
+      const sheet = getSheetSpec();
+      const outerMargin = Math.round(Math.min(sheet.width, sheet.height) * 0.03);
+      const innerGap = Math.max(8, Math.round(Math.min(sheet.width, sheet.height) * 0.012));
+      const innerMargin = outerMargin + innerGap;
+      const titleWidth = Math.min(520, Math.max(360, sheet.width * 0.42));
+      const titleHeight = Math.min(116, Math.max(82, sheet.height * 0.12));
+      const titleInset = Math.max(14, Math.round(Math.min(sheet.width, sheet.height) * 0.025));
+      return {
+        sheet,
+        outer: { x: outerMargin, y: outerMargin, width: sheet.width - outerMargin * 2, height: sheet.height - outerMargin * 2 },
+        inner: { x: innerMargin, y: innerMargin, width: sheet.width - innerMargin * 2, height: sheet.height - innerMargin * 2 },
+        title: {
+          x: sheet.width - innerMargin - titleInset - titleWidth,
+          y: sheet.height - innerMargin - titleInset - titleHeight,
+          width: titleWidth,
+          height: titleHeight
+        }
+      };
+    }
+
     function drawSheet() {
-      add("rect", { x: 36, y: 36, width: 1050, height: 690, fill: "none", stroke: "#222", "stroke-width": 2 });
-      add("rect", { x: 622, y: 608, width: 444, height: 96, fill: "white", stroke: "#1f2933", "stroke-width": 1.2 });
-      add("rect", { x: 626, y: 612, width: 436, height: 88, fill: "none", stroke: "#c4ccd6", "stroke-width": 1 });
-      [628, 644, 660].forEach(y => add("line", { x1: 626, y1: y, x2: 894, y2: y, stroke: "#d1d7df", "stroke-width": 1 }));
-      add("line", { x1: 626, y1: 676, x2: 894, y2: 676, stroke: "#d1d7df", "stroke-width": 1 });
-      add("line", { x1: 714, y1: 676, x2: 714, y2: 700, stroke: "#d1d7df", "stroke-width": 1 });
-      add("line", { x1: 792, y1: 676, x2: 792, y2: 700, stroke: "#d1d7df", "stroke-width": 1 });
-      add("line", { x1: 894, y1: 612, x2: 894, y2: 700, stroke: "#1f2933", "stroke-width": 1 });
-      add("line", { x1: 956, y1: 612, x2: 956, y2: 700, stroke: "#c4ccd6", "stroke-width": 1 });
-      [628, 644, 660, 676].forEach(y => add("line", { x1: 956, y1: y, x2: 1062, y2: y, stroke: "#d1d7df", "stroke-width": 1 }));
+      const { outer, inner, title } = getSheetLayout();
+      add("rect", { x: outer.x, y: outer.y, width: outer.width, height: outer.height, fill: "white", stroke: "#222", "stroke-width": 1.8 });
+      add("rect", { x: inner.x, y: inner.y, width: inner.width, height: inner.height, fill: "none", stroke: "#222", "stroke-width": 1.5 });
+      add("rect", { x: title.x, y: title.y, width: title.width, height: title.height, fill: "white", stroke: "#1f2933", "stroke-width": 1.2 });
     }
 
     function drawTitleBlock() {
       const p = state.project;
-      const label = (text, x, y) => add("text", { x, y, "font-size": 7, "font-weight": 800, fill: "#222", "letter-spacing": ".2" }).textContent = text;
-      const value = (text, x, y, size = 10, weight = 600) => add("text", { x, y, "font-size": size, "font-weight": weight, fill: "#1f2933" }).textContent = text || "";
-      label("PROJETO:", 634, 624);
-      value(p.title || "Planta Eletrica Residencial", 684, 624, 8, 700);
-      label("CLIENTE:", 634, 640);
-      value(p.client || "", 684, 640, 8, 600);
-      label("ENDERECO:", 634, 656);
-      value(p.address || "", 690, 656, 8, 600);
-      label("ARQ. RESPONSAVEL:", 634, 672);
-      value(p.designer || "", 726, 672, 8, 700);
-      label("DATA:", 634, 694);
-      value(p.date || "", 666, 694, 8, 600);
-      label("AREA:", 724, 694);
-      value(p.area || "", 754, 694, 8, 600);
-      label("ESCALA:", 802, 694);
-      value(p.scale || "", 842, 694, 8, 600);
-      label("PRANCHA:", 904, 624);
+      const { title } = getSheetLayout();
+      const x = title.x;
+      const y = title.y;
+      const w = title.width;
+      const h = title.height;
+      const pageW = Math.max(62, w * 0.14);
+      const logoW = Math.max(104, w * 0.24);
+      const dataW = w - pageW - logoW;
+      const pageX = x + dataW;
+      const logoX = pageX + pageW;
+      const row1 = y + h * .19;
+      const row2 = y + h * .36;
+      const row3 = y + h * .53;
+      const row4 = y + h * .70;
+      const bottom = y + h;
+      const revY = y + h * .78;
+      const valueX = x + 58;
+      const label = (text, tx, ty) => add("text", { x: tx, y: ty, "font-size": 7, "font-weight": 800, fill: "#222", "letter-spacing": ".2" }).textContent = text;
+      const value = (text, tx, ty, size = 9, weight = 600, anchor = "start") => add("text", { x: tx, y: ty, "font-size": size, "font-weight": weight, fill: "#1f2933", "text-anchor": anchor }).textContent = text || "";
+
+      add("rect", { x: x + 4, y: y + 4, width: w - 8, height: h - 8, fill: "none", stroke: "#c4ccd6", "stroke-width": 1 });
+      [row1, row2, row3, row4].forEach(ly => add("line", { x1: x + 4, y1: ly, x2: pageX, y2: ly, stroke: "#d1d7df", "stroke-width": 1 }));
+      add("line", { x1: x + 4, y1: row4, x2: pageX, y2: row4, stroke: "#d1d7df", "stroke-width": 1 });
+      add("line", { x1: x + dataW * .34, y1: row4, x2: x + dataW * .34, y2: bottom - 4, stroke: "#d1d7df", "stroke-width": 1 });
+      add("line", { x1: x + dataW * .64, y1: row4, x2: x + dataW * .64, y2: bottom - 4, stroke: "#d1d7df", "stroke-width": 1 });
+      add("line", { x1: pageX, y1: y, x2: pageX, y2: bottom, stroke: "#1f2933", "stroke-width": 1.1 });
+      add("line", { x1: logoX, y1: y, x2: logoX, y2: bottom, stroke: "#1f2933", "stroke-width": 1.1 });
+      add("line", { x1: pageX, y1: revY, x2: logoX, y2: revY, stroke: "#d1d7df", "stroke-width": 1 });
+
+      label("PROJETO:", x + 12, y + h * .13);
+      value(p.title || "Planta Eletrica Residencial", valueX, y + h * .13, 8, 700);
+      label("CLIENTE:", x + 12, y + h * .30);
+      value(p.client || "", valueX, y + h * .30, 8, 600);
+      label("ENDEREÇO:", x + 12, y + h * .47);
+      value(p.address || "", valueX, y + h * .47, 8, 600);
+      label("ARQ. RESPONSÁVEL:", x + 12, y + h * .64);
+      value(p.designer || "", x + 104, y + h * .64, 8, 700);
+      label("DATA:", x + 12, y + h * .91);
+      value(p.date || "", x + 45, y + h * .91, 8, 600);
+      label("ÁREA:", x + dataW * .34 + 12, y + h * .91);
+      value(p.area || "", x + dataW * .34 + 45, y + h * .91, 8, 600);
+      label("ESCALA:", x + dataW * .64 + 12, y + h * .91);
+      value(p.scale || "", x + dataW * .64 + 52, y + h * .91, 8, 600);
+      label("PRANCHA:", pageX + 10, y + h * .18);
       const sheetParts = String(p.sheetNumber || "01/01").split("/");
       const revisionText = String(p.revision || "").replace(/^rev\.?\s*/i, "");
-      value(sheetParts[0] || "01", 904, 662, 30, 800);
-      value("/", 936, 686, 16, 700);
-      value(sheetParts[1] || "01", 947, 690, 12, 700);
-      label("REVISAO:", 904, 699);
-      value(revisionText, 944, 699, 7, 700);
+      value(sheetParts[0] || "01", pageX + pageW * .22, y + h * .58, 30, 800);
+      value("/", pageX + pageW * .58, y + h * .72, 16, 700);
+      value(sheetParts[1] || "01", pageX + pageW * .74, y + h * .77, 12, 700);
+      label("REVISÃO:", pageX + 10, y + h * .91);
+      value(revisionText, pageX + 54, y + h * .91, 7, 700);
       if (p.logoDataUrl) {
-        add("image", { x: 966, y: 616, width: 86, height: 34, href: p.logoDataUrl, preserveAspectRatio: "xMidYMid meet" });
+        add("image", { x: logoX + 10, y: y + 10, width: logoW - 20, height: h * .42, href: p.logoDataUrl, preserveAspectRatio: "xMidYMid meet" });
       } else {
-        value(p.companyName || "EMPRESA", 968, 638, 14, 800);
+        value(p.companyName || "EMPRESA", logoX + logoW / 2, y + h * .36, 14, 800, "middle");
       }
-      value(p.companyName || "", 966, 666, 7, 700);
-      value(p.companyContact || "", 966, 682, 6.5, 500);
-      value(p.companyAddress || "", 966, 696, 6.5, 500);
+      value(p.companyName || "", logoX + 10, y + h * .64, 7, 700);
+      value(p.companyContact || "", logoX + 10, y + h * .80, 6.5, 500);
+      value(p.companyAddress || "", logoX + 10, y + h * .94, 6.5, 500);
     }
 
     function drawRoom(room) {
@@ -2093,7 +2138,6 @@
       $("companyName").value = state.project.companyName || "";
       $("companyContact").value = state.project.companyContact || "";
       $("companyAddress").value = state.project.companyAddress || "";
-      $("scaleSelect").value = state.project.scale;
       $("customScale").value = state.project.customScale || String(state.project.scale || "1:50").split(":")[1] || 50;
       $("unitSelect").value = state.unit || state.project.unit || "m";
       $("sheetSize").value = state.project.sheet;
@@ -2918,7 +2962,20 @@
       $("modelGridType").value = state.modelGridType;
       $("modelTheme").value = state.modelTheme;
       $("unitSelect").value = state.unit;
-      drawing.setAttribute("viewBox", state.workspaceMode === "model" ? "-220 -180 2200 1400" : "0 0 1122 794");
+      const sheet = getSheetSpec();
+      drawing.setAttribute("viewBox", state.workspaceMode === "model" ? "-220 -180 2200 1400" : `0 0 ${sheet.width} ${sheet.height}`);
+      const sheetEl = document.querySelector(".sheet");
+      if (state.workspaceMode === "print") {
+        sheetEl.style.width = `${sheet.width}px`;
+        sheetEl.style.minWidth = `${Math.min(sheet.width, 620)}px`;
+        sheetEl.style.height = `${sheet.height}px`;
+        sheetEl.style.aspectRatio = `${sheet.width} / ${sheet.height}`;
+      } else {
+        sheetEl.style.width = "";
+        sheetEl.style.minWidth = "";
+        sheetEl.style.height = "";
+        sheetEl.style.aspectRatio = "";
+      }
       document.querySelectorAll("[data-ribbon-group]").forEach(group => {
         group.classList.toggle("is-hidden", group.dataset.ribbonGroup !== state.workspaceMode);
       });
@@ -3031,13 +3088,12 @@
       if (deletePointBtn) deletePoint(deletePointBtn.dataset.deletePoint);
     });
 
-    ["projectTitle", "clientName", "projectAddress", "designerName", "projectDate", "projectRevision", "projectArea", "sheetNumber", "companyName", "companyContact", "companyAddress", "scaleSelect", "customScale", "sheetSize"].forEach(id => {
+    ["projectTitle", "clientName", "projectAddress", "designerName", "projectDate", "projectRevision", "projectArea", "sheetNumber", "companyName", "companyContact", "companyAddress", "customScale", "sheetSize"].forEach(id => {
       $(id).addEventListener("focus", () => {
         $(id).dataset.beforeValue = $(id).value;
       });
       $(id).addEventListener("change", () => {
         if ($(id).dataset.beforeValue !== $(id).value) pushHistory();
-        if (id === "scaleSelect") $("customScale").value = String($("scaleSelect").value).split(":")[1] || $("customScale").value;
         if (id === "customScale") state.project.scale = `1:${$("customScale").value || 50}`;
         updateFromFields();
         render();
