@@ -332,6 +332,10 @@
       min-width: 0;
     }
 
+    .workspace.side-collapsed {
+      grid-template-columns: minmax(0, 1fr) 42px;
+    }
+
     .canvas-shell {
       position: relative;
       min-width: 0;
@@ -392,10 +396,29 @@
       grid-template-rows: auto 1fr;
     }
 
+    .workspace.side-collapsed .side-body,
+    .workspace.side-collapsed .side-tabs,
+    .workspace.side-collapsed .side-head p {
+      display: none;
+    }
+
+    .workspace.side-collapsed .side {
+      overflow: hidden;
+    }
+
     .side-head {
       padding: 14px;
       border-bottom: 1px solid #dbe1e8;
       background: white;
+      display: grid;
+      gap: 8px;
+    }
+
+    .side-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
     }
 
     .side-head h2 {
@@ -410,12 +433,48 @@
       font-size: 12px;
     }
 
+    .side-toggle {
+      width: 28px;
+      height: 28px;
+      min-height: 28px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    .side-tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+    }
+
+    .side-tab {
+      min-height: 30px;
+      padding: 5px 6px;
+      font-size: 11px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .side-tab.active {
+      background: var(--teal-2);
+      border-color: var(--teal);
+      color: #075652;
+      font-weight: 700;
+    }
+
     .side-body {
       overflow: auto;
       padding: 14px;
       display: grid;
       align-content: start;
       gap: 14px;
+    }
+
+    .panel.hidden {
+      display: none;
     }
 
     .panel {
@@ -502,10 +561,9 @@
       background: rgba(20, 27, 36, .18);
       z-index: 10;
       display: none;
-      place-items: center;
     }
 
-    .dialog-backdrop.open { display: grid; }
+    .dialog-backdrop.open { display: block; }
 
     .dialog {
       width: min(760px, calc(100vw - 40px));
@@ -514,6 +572,10 @@
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       overflow: hidden;
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
     }
 
     .dialog-head {
@@ -523,6 +585,8 @@
       justify-content: space-between;
       padding: 0 14px;
       border-bottom: 3px solid #49aaa4;
+      cursor: move;
+      user-select: none;
     }
 
     .dialog-title {
@@ -815,7 +879,7 @@
       </div>
     </section>
 
-    <main class="workspace">
+    <main class="workspace" id="workspace">
       <section class="canvas-shell">
         <div class="canvas-top">
           <div class="status" id="statusText">Ferramenta: Selecionar</div>
@@ -830,11 +894,21 @@
 
       <aside class="side">
         <div class="side-head">
-          <h2>Projeto</h2>
+          <div class="side-title-row">
+            <h2>Projeto</h2>
+            <button type="button" class="side-toggle" id="sideToggleBtn" title="Recolher ou expandir painel lateral">‹</button>
+          </div>
           <p id="summaryText">0 ambientes, 0 pontos, 0 circuitos</p>
+          <div class="side-tabs">
+            <button type="button" class="side-tab active" data-side-section="project">Projeto</button>
+            <button type="button" class="side-tab" data-side-section="rooms">Ambientes</button>
+            <button type="button" class="side-tab" data-side-section="points">Pontos</button>
+            <button type="button" class="side-tab" data-side-section="circuits">Circuitos</button>
+            <button type="button" class="side-tab" data-side-section="materials">Materiais</button>
+          </div>
         </div>
         <div class="side-body">
-          <section class="panel">
+          <section class="panel side-section" data-section="project">
             <div class="panel-title">Dados do Projeto</div>
             <div class="panel-body">
               <label>Nome do projeto <input id="projectTitle" value="Planta Eletrica Residencial"></label>
@@ -847,14 +921,14 @@
             </div>
           </section>
 
-          <section class="panel">
+          <section class="panel side-section hidden" data-section="rooms">
             <div class="panel-title">Ambientes <button type="button" id="addRoomSmallBtn">Adicionar</button></div>
             <div class="panel-body">
               <div id="roomsList" class="list"></div>
             </div>
           </section>
 
-          <section class="panel">
+          <section class="panel side-section hidden" data-section="points">
             <div class="panel-title">Ponto Eletrico</div>
             <div class="panel-body">
               <div class="cols-2">
@@ -881,7 +955,7 @@
             </div>
           </section>
 
-          <section class="panel">
+          <section class="panel side-section hidden" data-section="circuits">
             <div class="panel-title">Circuitos</div>
             <div class="panel-body">
               <table class="table">
@@ -891,7 +965,7 @@
             </div>
           </section>
 
-          <section class="panel">
+          <section class="panel side-section hidden" data-section="materials">
             <div class="panel-title">Materiais</div>
             <div class="panel-body">
               <table class="table">
@@ -967,6 +1041,8 @@
       currentFileName: "",
       tool: "select",
       selectedRoomId: null,
+      undoStack: [],
+      redoStack: [],
       layers: { rooms: true, openings: true, points: true, labels: true, circuits: true, sheet: true },
       project: {
         title: "Planta Eletrica Residencial",
@@ -984,6 +1060,36 @@
 
     const $ = (id) => document.getElementById(id);
     const drawing = $("drawing");
+
+    function projectSnapshot() {
+      return JSON.stringify(state.project);
+    }
+
+    function restoreSnapshot(snapshot) {
+      state.project = JSON.parse(snapshot);
+      state.selectedRoomId = state.project.rooms[0]?.id || null;
+      render();
+    }
+
+    function pushHistory() {
+      state.undoStack.push(projectSnapshot());
+      if (state.undoStack.length > 80) state.undoStack.shift();
+      state.redoStack = [];
+    }
+
+    function undoAction() {
+      if (!state.undoStack.length) return toast("Nada para desfazer.");
+      state.redoStack.push(projectSnapshot());
+      restoreSnapshot(state.undoStack.pop());
+      toast("Acao desfeita.");
+    }
+
+    function redoAction() {
+      if (!state.redoStack.length) return toast("Nada para refazer.");
+      state.undoStack.push(projectSnapshot());
+      restoreSnapshot(state.redoStack.pop());
+      toast("Acao refeita.");
+    }
 
     function uid() {
       if (window.crypto && typeof window.crypto.randomUUID === "function") {
@@ -1289,12 +1395,55 @@
         $("roomName").value = `Quarto ${String(next).padStart(2, "0")}`;
       }
       $("roomDialog").classList.add("open");
+      centerDialog($("roomForm"));
       updatePreview();
       setTimeout(() => $("roomName").focus(), 0);
     }
 
     function closeRoomDialog() {
       $("roomDialog").classList.remove("open");
+    }
+
+    function centerDialog(dialog) {
+      dialog.style.left = "50%";
+      dialog.style.top = "50%";
+      dialog.style.transform = "translate(-50%, -50%)";
+    }
+
+    function makeDialogDraggable(dialog, handle) {
+      let dragging = false;
+      let offsetX = 0;
+      let offsetY = 0;
+
+      handle.addEventListener("pointerdown", (event) => {
+        if (event.target.closest("button")) return;
+        const rect = dialog.getBoundingClientRect();
+        dragging = true;
+        offsetX = event.clientX - rect.left;
+        offsetY = event.clientY - rect.top;
+        dialog.style.transform = "none";
+        dialog.style.left = `${rect.left}px`;
+        dialog.style.top = `${rect.top}px`;
+        handle.setPointerCapture(event.pointerId);
+      });
+
+      handle.addEventListener("pointermove", (event) => {
+        if (!dragging) return;
+        const rect = dialog.getBoundingClientRect();
+        const maxX = window.innerWidth - rect.width;
+        const maxY = window.innerHeight - rect.height;
+        const x = Math.max(0, Math.min(maxX, event.clientX - offsetX));
+        const y = Math.max(0, Math.min(maxY, event.clientY - offsetY));
+        dialog.style.left = `${x}px`;
+        dialog.style.top = `${y}px`;
+      });
+
+      handle.addEventListener("pointerup", (event) => {
+        dragging = false;
+        if (handle.hasPointerCapture(event.pointerId)) {
+          handle.releasePointerCapture(event.pointerId);
+        }
+      });
     }
 
     function updatePreview() {
@@ -1328,6 +1477,7 @@
     }
 
     function createRoom(formData) {
+      pushHistory();
       const pos = nextRoomPosition();
       const room = {
         id: uid(),
@@ -1348,6 +1498,7 @@
     function addPointFromForm() {
       const room = state.project.rooms.find(r => r.id === $("pointRoom").value);
       if (!room) return toast("Crie um ambiente primeiro.");
+      pushHistory();
       const type = $("pointType").value;
       const wall = Number($("pointWall").value || 1);
       let p;
@@ -1378,6 +1529,7 @@
       const roomId = state.selectedRoomId || $("pointRoom").value;
       const room = state.project.rooms.find(r => r.id === roomId);
       if (!room) return toast("Selecione um ambiente.");
+      pushHistory();
       state.project.points = state.project.points.filter(p => !(p.roomId === room.id && p.type === "outlet"));
       const per = perimeterM(roomPolygon(room));
       const count = Math.max(1, Math.ceil(per / 5));
@@ -1397,6 +1549,7 @@
       const roomId = state.selectedRoomId || $("pointRoom").value;
       const room = state.project.rooms.find(r => r.id === roomId);
       if (!room) return toast("Selecione um ambiente.");
+      pushHistory();
       state.project.points = state.project.points.filter(p => !(p.roomId === room.id && p.type === "light"));
       const pts = roomPolygon(room);
       const area = polygonAreaM2(pts);
@@ -1462,6 +1615,7 @@
     function loadProject(file, handle = null) {
       const reader = new FileReader();
       reader.onload = () => {
+        pushHistory();
         state.project = JSON.parse(reader.result);
         state.fileHandle = handle;
         state.currentFileName = handle?.name || file.name || "";
@@ -1578,6 +1732,7 @@
     function addOpeningQuick(type) {
       const room = requireRoom();
       if (!room) return;
+      pushHistory();
       const widthCm = type === "Janela" ? 120 : 80;
       const wall = type === "Janela" ? 1 : 3;
       state.project.openings.push({
@@ -1656,11 +1811,38 @@
       });
     });
 
+    function showSideSection(section) {
+      document.querySelectorAll(".side-tab").forEach(tab => {
+        tab.classList.toggle("active", tab.dataset.sideSection === section);
+      });
+      document.querySelectorAll(".side-section").forEach(panel => {
+        panel.classList.toggle("hidden", panel.dataset.section !== section);
+      });
+    }
+
+    document.querySelectorAll(".side-tab").forEach(tab => {
+      tab.addEventListener("click", () => showSideSection(tab.dataset.sideSection));
+    });
+
+    $("sideToggleBtn").addEventListener("click", () => {
+      const collapsed = $("workspace").classList.toggle("side-collapsed");
+      $("sideToggleBtn").textContent = collapsed ? "›" : "‹";
+      $("sideToggleBtn").title = collapsed ? "Expandir painel lateral" : "Recolher painel lateral";
+    });
+
     ["projectTitle", "clientName", "projectAddress", "designerName", "projectDate", "scaleSelect", "sheetSize"].forEach(id => {
-      $(id).addEventListener("input", () => { updateFromFields(); render(); });
+      $(id).addEventListener("focus", () => {
+        $(id).dataset.beforeValue = $(id).value;
+      });
+      $(id).addEventListener("change", () => {
+        if ($(id).dataset.beforeValue !== $(id).value) pushHistory();
+        updateFromFields();
+        render();
+      });
     });
 
     $("projectDate").value = state.project.date;
+    makeDialogDraggable($("roomForm"), $("roomForm").querySelector(".dialog-head"));
     $("roomBtn").onclick = openRoomDialog;
     $("addRoomSmallBtn").onclick = openRoomDialog;
     $("closeRoomDialog").onclick = closeRoomDialog;
@@ -1691,10 +1873,11 @@
     $("saveBtn").onclick = () => saveProject(false).catch(err => toast(err.message));
     $("saveAsBtn").onclick = () => saveProject(true).catch(err => toast(err.message));
     $("openBtn").onclick = () => openProject().catch(err => toast(err.message));
-    $("undoBtn").onclick = () => toast("Desfazer ainda sera implementado.");
-    $("redoBtn").onclick = () => toast("Refazer ainda sera implementado.");
+    $("undoBtn").addEventListener("click", undoAction);
+    $("redoBtn").addEventListener("click", redoAction);
     $("fileInput").onchange = (event) => event.target.files[0] && loadProject(event.target.files[0]);
     $("newProjectBtn").onclick = () => {
+      pushHistory();
       state.project.rooms = [];
       state.project.openings = [];
       state.project.points = [];
@@ -1702,6 +1885,18 @@
       render();
       toast("Projeto novo criado.");
     };
+
+    document.addEventListener("keydown", (event) => {
+      const key = event.key.toLowerCase();
+      if ((event.ctrlKey || event.metaKey) && key === "z" && !event.shiftKey) {
+        event.preventDefault();
+        undoAction();
+      }
+      if ((event.ctrlKey || event.metaKey) && (key === "y" || (key === "z" && event.shiftKey))) {
+        event.preventDefault();
+        redoAction();
+      }
+    });
 
     drawing.addEventListener("click", (event) => {
       const rect = drawing.getBoundingClientRect();
