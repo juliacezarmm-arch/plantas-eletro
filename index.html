@@ -654,9 +654,49 @@
       background: #fcfbff;
     }
 
+    .room-dialog-main {
+      display: grid;
+      grid-template-columns: 124px 1fr;
+      gap: 16px;
+    }
+
+    .room-nav {
+      display: grid;
+      align-content: start;
+      background: #f3f6f9;
+      border: 1px solid #e1e7ee;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .room-nav button {
+      border: 0;
+      border-radius: 0;
+      min-height: 34px;
+      justify-content: start;
+      text-align: left;
+      font-size: 12px;
+      background: transparent;
+    }
+
+    .room-nav button.active {
+      background: #49aaa4;
+      color: white;
+      font-weight: 700;
+    }
+
+    .room-page {
+      display: grid;
+      gap: 14px;
+    }
+
+    .room-page.hidden {
+      display: none;
+    }
+
     .shape-grid {
       display: grid;
-      grid-template-columns: repeat(5, 42px);
+      grid-template-columns: repeat(4, 42px);
       gap: 8px;
       align-content: start;
     }
@@ -680,6 +720,20 @@
       clip-path: polygon(0 0, 58% 0, 58% 45%, 100% 45%, 100% 100%, 0 100%);
       background: #7d8792;
       border: 0;
+    }
+
+    .shape-icon.l.flip {
+      transform: scaleX(-1);
+    }
+
+    .shape-icon.rect-wide {
+      width: 32px;
+      height: 20px;
+    }
+
+    .shape-icon.rect-tall {
+      width: 20px;
+      height: 32px;
     }
 
     .shape-btn.active {
@@ -975,6 +1029,10 @@
                 <label>Revisao <input id="projectRevision" value="Rev. 01"></label>
                 <label>Logo <input id="logoInput" type="file" accept="image/*"></label>
               </div>
+              <div class="cols-2">
+                <label>Area <input id="projectArea" value=""></label>
+                <label>Prancha <input id="sheetNumber" value="01/01"></label>
+              </div>
             </div>
           </section>
 
@@ -1044,41 +1102,93 @@
         <button type="button" id="closeRoomDialog">x</button>
       </div>
       <div class="dialog-body">
-        <div class="cols-2">
-          <label>Nome do ambiente <input id="roomName" required value="Quarto 01"></label>
-          <label>Categoria
-            <select id="roomCategory">
-              <option>Quarto</option>
-              <option>Banheiro</option>
-              <option>Sala</option>
-              <option>Cozinha</option>
-              <option>Corredor</option>
-              <option>Lavanderia</option>
-              <option>Varanda</option>
-            </select>
-          </label>
-        </div>
-        <div class="dialog-layout">
-          <div>
-            <div class="panel-title" style="border:0;padding-left:0">Forma</div>
-            <div class="shape-grid">
-              <button class="shape-btn active" type="button" data-shape="rect"><span class="shape-icon"></span></button>
-              <button class="shape-btn" type="button" data-shape="l"><span class="shape-icon l"></span></button>
-              <button class="shape-btn" type="button" data-shape="rect"><span class="shape-icon" style="transform:skew(-8deg)"></span></button>
-              <button class="shape-btn" type="button" data-shape="rect"><span class="shape-icon" style="border-radius:10px"></span></button>
-              <button class="shape-btn" type="button" data-shape="l"><span class="shape-icon l" style="transform:rotate(90deg)"></span></button>
-            </div>
+        <div class="room-dialog-main">
+          <div class="room-nav">
+            <button type="button" class="room-tab active" data-room-page="name">Nome</button>
+            <button type="button" class="room-tab" data-room-page="dimensions">Dimensoes</button>
+            <button type="button" class="room-tab" data-room-page="walls">Paredes</button>
+            <button type="button" class="room-tab" data-room-page="position">Posicionamento</button>
+            <button type="button" class="room-tab" data-room-page="label">Etiqueta</button>
           </div>
           <div>
-            <div class="preview-box">
-              <svg id="roomPreview" width="300" height="160" viewBox="0 0 300 160"></svg>
-            </div>
-            <div class="cols-2" style="margin-top:12px">
-              <label>A largura m <input id="measureA" type="number" step="0.05" value="4.35"></label>
-              <label>B altura m <input id="measureB" type="number" step="0.05" value="3.45"></label>
-                <label class="l-only field-hidden">C largura m <input id="measureC" type="number" step="0.05" value="2.80"></label>
-                <label class="l-only field-hidden">D altura m <input id="measureD" type="number" step="0.05" value="2.55"></label>
-            </div>
+            <section class="room-page" data-page="name">
+              <div class="cols-2">
+                <label>Nome do ambiente <input id="roomName" required value="Quarto 01"></label>
+                <label>Categoria
+                  <select id="roomCategory">
+                    <option>Quarto</option>
+                    <option>Banheiro</option>
+                    <option>Sala</option>
+                    <option>Cozinha</option>
+                    <option>Corredor</option>
+                    <option>Lavanderia</option>
+                    <option>Varanda</option>
+                  </select>
+                </label>
+              </div>
+            </section>
+
+            <section class="room-page hidden" data-page="dimensions">
+              <div class="dialog-layout">
+                <div>
+                  <div class="panel-title" style="border:0;padding-left:0">Forma</div>
+                  <div class="shape-grid">
+                    <button class="shape-btn active" type="button" data-shape="rect"><span class="shape-icon"></span></button>
+                    <button class="shape-btn" type="button" data-shape="rect"><span class="shape-icon rect-wide"></span></button>
+                    <button class="shape-btn" type="button" data-shape="rect"><span class="shape-icon rect-tall"></span></button>
+                    <button class="shape-btn" type="button" data-shape="l"><span class="shape-icon l"></span></button>
+                  </div>
+                </div>
+                <div>
+                  <div class="preview-box">
+                    <svg id="roomPreview" width="300" height="160" viewBox="0 0 300 160"></svg>
+                  </div>
+                  <div class="cols-2" style="margin-top:12px">
+                    <label>A largura m <input id="measureA" type="number" step="0.05" value="4.35"></label>
+                    <label>B altura m <input id="measureB" type="number" step="0.05" value="3.45"></label>
+                    <label class="l-only field-hidden">C largura m <input id="measureC" type="number" step="0.05" value="2.80"></label>
+                    <label class="l-only field-hidden">D altura m <input id="measureD" type="number" step="0.05" value="2.55"></label>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="room-page hidden" data-page="walls">
+              <div class="preview-box">
+                <svg id="wallPreview" width="300" height="160" viewBox="0 0 300 160"></svg>
+              </div>
+            </section>
+
+            <section class="room-page hidden" data-page="position">
+              <div class="cols-2">
+                <label>Colar em ambiente <select id="attachRoom"></select></label>
+                <label>Parede do ambiente <select id="attachWall"></select></label>
+              </div>
+              <div class="cols-3">
+                <label>Parede deste novo ambiente <select id="newRoomWall"></select></label>
+                <label>Rotacao
+                  <select id="roomRotation">
+                    <option value="0">0 graus</option>
+                    <option value="90">90 graus</option>
+                    <option value="180">180 graus</option>
+                    <option value="270">270 graus</option>
+                  </select>
+                </label>
+                <label>Deslocamento m <input id="attachOffset" type="number" step="0.05" value="0"></label>
+              </div>
+            </section>
+
+            <section class="room-page hidden" data-page="label">
+              <div class="cols-2">
+                <label>Texto da etiqueta <input id="roomLabelText" value=""></label>
+                <label>Mostrar area
+                  <select id="roomShowArea">
+                    <option value="yes" selected>Sim</option>
+                    <option value="no">Nao</option>
+                  </select>
+                </label>
+              </div>
+            </section>
           </div>
         </div>
       </div>
@@ -1114,6 +1224,8 @@
         designer: "Projetista",
         date: new Date().toISOString().slice(0, 10),
         revision: "Rev. 01",
+        area: "",
+        sheetNumber: "01/01",
         logoDataUrl: "",
         scale: "1:50",
         sheet: "A3 Paisagem",
@@ -1138,6 +1250,8 @@
         designer: "Projetista",
         date: new Date().toISOString().slice(0, 10),
         revision: "Rev. 01",
+        area: "",
+        sheetNumber: "01/01",
         logoDataUrl: "",
         scale: "1:50",
         sheet: "A3 Paisagem",
@@ -1198,23 +1312,32 @@
 
     function roomPolygon(room) {
       const m = room.measures;
+      let pts;
       if (room.shape === "l") {
         const a = m.a * PX, b = m.b * PX, c = m.c * PX, d = m.d * PX;
-        return [
-          [room.x, room.y],
-          [room.x + c, room.y],
-          [room.x + c, room.y + d],
-          [room.x + a, room.y + d],
-          [room.x + a, room.y + b],
-          [room.x, room.y + b]
+        pts = [
+          [0, 0],
+          [c, 0],
+          [c, d],
+          [a, d],
+          [a, b],
+          [0, b]
+        ];
+      } else {
+        pts = [
+          [0, 0],
+          [m.a * PX, 0],
+          [m.a * PX, m.b * PX],
+          [0, m.b * PX]
         ];
       }
-      return [
-        [room.x, room.y],
-        [room.x + m.a * PX, room.y],
-        [room.x + m.a * PX, room.y + m.b * PX],
-        [room.x, room.y + m.b * PX]
-      ];
+      const angle = ((Number(room.rotation) || 0) % 360) * Math.PI / 180;
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      return pts.map(([x, y]) => [
+        room.x + x * cos - y * sin,
+        room.y + x * sin + y * cos
+      ]);
     }
 
     function segments(points) {
@@ -1229,6 +1352,27 @@
         sum += x1 * y2 - x2 * y1;
       }
       return Math.abs(sum / 2) / (PX * PX);
+    }
+
+    function polygonCentroid(points) {
+      let twiceArea = 0;
+      let cx = 0;
+      let cy = 0;
+      for (let i = 0; i < points.length; i++) {
+        const [x1, y1] = points[i];
+        const [x2, y2] = points[(i + 1) % points.length];
+        const cross = x1 * y2 - x2 * y1;
+        twiceArea += cross;
+        cx += (x1 + x2) * cross;
+        cy += (y1 + y2) * cross;
+      }
+      if (Math.abs(twiceArea) < .001) {
+        return {
+          x: points.reduce((a, p) => a + p[0], 0) / points.length,
+          y: points.reduce((a, p) => a + p[1], 0) / points.length
+        };
+      }
+      return { x: cx / (3 * twiceArea), y: cy / (3 * twiceArea) };
     }
 
     function perimeterM(points) {
@@ -1261,6 +1405,99 @@
         number: index + 1,
         lengthM: Math.hypot(x2 - x1, y2 - y1) / PX
       }));
+    }
+
+    function wallSegment(room, wallNumber) {
+      const segs = segments(roomPolygon(room));
+      return segs[Math.max(0, Math.min(segs.length - 1, Number(wallNumber) - 1))];
+    }
+
+    function segmentMidpoint(seg) {
+      const [[x1, y1], [x2, y2]] = seg;
+      return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 };
+    }
+
+    function segmentNormal(seg) {
+      const [[x1, y1], [x2, y2]] = seg;
+      const length = Math.hypot(x2 - x1, y2 - y1) || 1;
+      return { x: -(y2 - y1) / length, y: (x2 - x1) / length };
+    }
+
+    function attachRoomPosition(formData) {
+      const target = state.project.rooms.find(r => r.id === formData.attachRoomId);
+      if (!target || state.editingRoomId) return null;
+      const draft = { x: 0, y: 0, shape: formData.shape, measures: formData.measures, rotation: formData.rotation };
+      const targetSeg = wallSegment(target, formData.attachWall);
+      const draftSeg = wallSegment(draft, formData.newWall);
+      const targetMid = segmentMidpoint(targetSeg);
+      const draftMid = segmentMidpoint(draftSeg);
+      const normal = segmentNormal(targetSeg);
+      const offsetPx = (Number(formData.attachOffset) || 0) * PX;
+      return {
+        x: targetMid.x - draftMid.x + normal.x * offsetPx,
+        y: targetMid.y - draftMid.y + normal.y * offsetPx
+      };
+    }
+
+    function populateRoomPositionFields() {
+      const attachRoom = $("attachRoom");
+      const attachWall = $("attachWall");
+      const newRoomWall = $("newRoomWall");
+      const previousTarget = attachRoom.value || state.selectedRoomId;
+      const previousWall = attachWall.value;
+      const previousNewWall = newRoomWall.value;
+      attachRoom.innerHTML = "";
+      state.project.rooms
+        .filter(room => room.id !== state.editingRoomId)
+        .forEach(room => {
+          const opt = document.createElement("option");
+          opt.value = room.id;
+          opt.textContent = room.name;
+          attachRoom.appendChild(opt);
+        });
+      if ([...attachRoom.options].some(opt => opt.value === previousTarget)) attachRoom.value = previousTarget;
+
+      attachWall.innerHTML = "";
+      const target = state.project.rooms.find(room => room.id === attachRoom.value);
+      if (target) {
+        roomSegmentOptions(target).forEach(wall => {
+          const opt = document.createElement("option");
+          opt.value = wall.number;
+          opt.textContent = `Parede ${wall.number} (${wall.lengthM.toFixed(2).replace(".", ",")} m)`;
+          attachWall.appendChild(opt);
+        });
+      }
+      if ([...attachWall.options].some(opt => opt.value === previousWall)) {
+        attachWall.value = previousWall;
+      } else if ([...attachWall.options].some(opt => opt.value === "2")) {
+        attachWall.value = "2";
+      }
+
+      newRoomWall.innerHTML = "";
+      const shape = document.querySelector(".shape-btn.active")?.dataset.shape || "rect";
+      const draft = {
+        x: 0,
+        y: 0,
+        shape,
+        rotation: Number($("roomRotation").value || 0),
+        measures: {
+          a: Number($("measureA").value) || 0,
+          b: Number($("measureB").value) || 0,
+          c: Number($("measureC").value) || 0,
+          d: Number($("measureD").value) || 0
+        }
+      };
+      roomSegmentOptions(draft).forEach(wall => {
+        const opt = document.createElement("option");
+        opt.value = wall.number;
+        opt.textContent = `Parede ${wall.number} (${wall.lengthM.toFixed(2).replace(".", ",")} m)`;
+        newRoomWall.appendChild(opt);
+      });
+      if ([...newRoomWall.options].some(opt => opt.value === previousNewWall)) {
+        newRoomWall.value = previousNewWall;
+      } else if ([...newRoomWall.options].some(opt => opt.value === "4")) {
+        newRoomWall.value = "4";
+      }
     }
 
     function wallPoint(room, wallNumber, offsetM, insetM = 0) {
@@ -1302,26 +1539,45 @@
 
     function drawSheet() {
       add("rect", { x: 36, y: 36, width: 1050, height: 690, fill: "none", stroke: "#222", "stroke-width": 2 });
-      add("rect", { x: 760, y: 640, width: 326, height: 86, fill: "white", stroke: "#586575", "stroke-width": 1.5 });
-      add("line", { x1: 760, y1: 670, x2: 1086, y2: 670, stroke: "#586575" });
-      add("line", { x1: 860, y1: 640, x2: 860, y2: 726, stroke: "#586575" });
-      add("line", { x1: 985, y1: 670, x2: 985, y2: 726, stroke: "#586575" });
+      add("rect", { x: 58, y: 628, width: 1006, height: 76, fill: "white", stroke: "#b8c1cc", "stroke-width": 1 });
+      [645, 662, 679].forEach(y => add("line", { x1: 58, y1: y, x2: 1064, y2: y, stroke: "#d1d7df", "stroke-width": 1 }));
+      add("line", { x1: 58, y1: 679, x2: 58, y2: 704, stroke: "#b8c1cc" });
+      add("line", { x1: 315, y1: 679, x2: 315, y2: 704, stroke: "#d1d7df" });
+      add("line", { x1: 445, y1: 679, x2: 445, y2: 704, stroke: "#d1d7df" });
+      add("line", { x1: 575, y1: 679, x2: 575, y2: 704, stroke: "#d1d7df" });
+      add("line", { x1: 705, y1: 628, x2: 705, y2: 704, stroke: "#d1d7df" });
+      add("line", { x1: 830, y1: 628, x2: 830, y2: 704, stroke: "#d1d7df" });
     }
 
     function drawTitleBlock() {
       const p = state.project;
-      add("text", { x: 870, y: 660, "font-size": 14, "font-weight": 700, fill: "#1f2933" }).textContent = p.title || "Planta Eletrica";
+      const label = (text, x, y) => add("text", { x, y, "font-size": 7, "font-weight": 800, fill: "#222", "letter-spacing": ".2" }).textContent = text;
+      const value = (text, x, y, size = 10, weight = 600) => add("text", { x, y, "font-size": size, "font-weight": weight, fill: "#1f2933" }).textContent = text || "";
+      label("PROJETO:", 66, 641);
+      value(p.title || "Planta Eletrica Residencial", 112, 641, 9, 700);
+      label("CLIENTE:", 66, 658);
+      value(p.client || "", 112, 658, 9, 600);
+      label("ENDERECO:", 66, 675);
+      value(p.address || "", 118, 675, 9, 600);
+      label("ARQ. RESPONSAVEL:", 66, 694);
+      value(p.designer || "", 150, 694, 9, 700);
+      label("DATA:", 324, 694);
+      value(p.date || "", 350, 694, 8, 600);
+      label("AREA:", 454, 694);
+      value(p.area || "", 482, 694, 8, 600);
+      label("ESCALA:", 584, 694);
+      value(p.scale || "", 620, 694, 8, 600);
+      label("PRANCHA:", 715, 649);
+      value(p.sheetNumber || "01/01", 715, 666, 18, 800);
+      label("REVISAO:", 715, 691);
+      value(p.revision || "", 755, 691, 8, 700);
       if (p.logoDataUrl) {
-        add("image", { x: 770, y: 646, width: 78, height: 34, href: p.logoDataUrl, preserveAspectRatio: "xMidYMid meet" });
+        add("image", { x: 846, y: 641, width: 95, height: 38, href: p.logoDataUrl, preserveAspectRatio: "xMidYMid meet" });
       } else {
-        add("text", { x: 770, y: 660, "font-size": 13, "font-weight": 800, fill: "#d45b2a" }).textContent = "EP";
+        value("ELETROPLANTA", 846, 661, 16, 800);
       }
-      add("text", { x: 870, y: 688, "font-size": 9, fill: "#4b5563" }).textContent = "CLIENTE";
-      add("text", { x: 870, y: 704, "font-size": 12, fill: "#111827" }).textContent = p.client || "";
-      add("text", { x: 990, y: 688, "font-size": 9, fill: "#4b5563" }).textContent = "ESCALA";
-      add("text", { x: 990, y: 704, "font-size": 12, fill: "#111827" }).textContent = p.scale;
-      add("text", { x: 990, y: 720, "font-size": 10, fill: "#4b5563" }).textContent = `${p.revision || ""} ${p.date || ""}`.trim();
-      add("text", { x: 770, y: 716, "font-size": 10, fill: "#4b5563" }).textContent = p.address || "";
+      value("Projeto eletrico residencial", 846, 681, 8, 600);
+      value("Contato / empresa", 846, 693, 7, 500);
     }
 
     function drawRoom(room) {
@@ -1350,11 +1606,14 @@
       }, g);
 
       const area = polygonAreaM2(pts);
-      const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length;
-      const cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+      const labelPoint = polygonCentroid(pts);
+      const cx = labelPoint.x;
+      const cy = labelPoint.y;
       if (state.layers.labels) {
-        add("text", { x: cx, y: cy - 4, "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: "#1f2933", "pointer-events": "none" }, g).textContent = room.name;
-        add("text", { x: cx, y: cy + 12, "text-anchor": "middle", "font-size": 11, fill: "#303846", "pointer-events": "none" }, g).textContent = `${area.toFixed(2)}m²`;
+        add("text", { x: cx, y: cy - 4, "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: "#1f2933", "pointer-events": "none" }, g).textContent = room.label || room.name;
+        if (room.showArea !== false) {
+          add("text", { x: cx, y: cy + 12, "text-anchor": "middle", "font-size": 11, fill: "#303846", "pointer-events": "none" }, g).textContent = `${area.toFixed(2)}m²`;
+        }
         segments(pts).forEach(([[x1, y1], [x2, y2]], index) => {
           const midX = (x1 + x2) / 2;
           const midY = (y1 + y2) / 2;
@@ -1564,6 +1823,8 @@
       $("designerName").value = state.project.designer;
       $("projectDate").value = state.project.date;
       $("projectRevision").value = state.project.revision || "";
+      $("projectArea").value = state.project.area || "";
+      $("sheetNumber").value = state.project.sheetNumber || "01/01";
       $("scaleSelect").value = state.project.scale;
       $("sheetSize").value = state.project.sheet;
     }
@@ -1575,6 +1836,8 @@
       state.project.designer = $("designerName").value;
       state.project.date = $("projectDate").value;
       state.project.revision = $("projectRevision").value;
+      state.project.area = $("projectArea").value;
+      state.project.sheetNumber = $("sheetNumber").value;
       state.project.scale = $("scaleSelect").value;
       state.project.sheet = $("sheetSize").value;
     }
@@ -1593,6 +1856,8 @@
       const room = state.project.rooms.find(r => r.id === roomId);
       state.editingRoomId = room?.id || null;
       $("roomForm").querySelector(".dialog-title").textContent = room ? "Editar Ambiente" : "Novo Ambiente";
+      document.querySelectorAll(".room-tab").forEach(tab => tab.classList.toggle("active", tab.dataset.roomPage === "name"));
+      document.querySelectorAll(".room-page").forEach(page => page.classList.toggle("hidden", page.dataset.page !== "name"));
       if (room) {
         $("roomName").value = room.name;
         $("roomCategory").value = room.category;
@@ -1600,6 +1865,9 @@
         $("measureB").value = room.measures.b;
         $("measureC").value = room.measures.c || 0;
         $("measureD").value = room.measures.d || 0;
+        $("roomRotation").value = room.rotation || 0;
+        $("roomLabelText").value = room.label || "";
+        $("roomShowArea").value = room.showArea === false ? "no" : "yes";
         setActiveShape(room.shape || "rect");
       } else {
         const next = state.project.rooms.length + 1;
@@ -1609,8 +1877,13 @@
         $("measureB").value = 3.45;
         $("measureC").value = 2.8;
         $("measureD").value = 2.55;
+        $("roomRotation").value = 0;
+        $("attachOffset").value = 0;
+        $("roomLabelText").value = "";
+        $("roomShowArea").value = "yes";
         setActiveShape("rect");
       }
+      populateRoomPositionFields();
       $("roomDialog").classList.add("open");
       centerDialog($("roomForm"));
       updatePreview();
@@ -1672,8 +1945,8 @@
         field.classList.toggle("field-hidden", shape !== "l");
       });
       const pts = shape === "l"
-        ? [[55,25],[160,25],[160,75],[235,75],[235,130],[55,130]]
-        : [[55,30],[235,30],[235,130],[55,130]];
+        ? [[70,25],[155,25],[155,75],[235,75],[235,130],[70,130]]
+        : [[65,35],[235,35],[235,125],[65,125]];
       const poly = document.createElementNS(NS, "polygon");
       poly.setAttribute("points", pts.map(p => p.join(",")).join(" "));
       poly.setAttribute("fill", "#dff4f0");
@@ -1687,6 +1960,75 @@
       t.setAttribute("font-size", "12");
       t.textContent = shape === "l" ? "Ambiente em L" : "Ambiente retangular";
       svg.appendChild(t);
+      const labels = shape === "l"
+        ? [
+          ["C", 112, 18], ["D", 246, 104], ["A", 152, 146], ["B", 56, 82]
+        ]
+        : [
+          ["A", 150, 145], ["B", 48, 82]
+        ];
+      labels.forEach(([text, x, y]) => {
+        const item = document.createElementNS(NS, "text");
+        item.setAttribute("x", x);
+        item.setAttribute("y", y);
+        item.setAttribute("text-anchor", "middle");
+        item.setAttribute("font-size", "14");
+        item.setAttribute("font-weight", "800");
+        item.setAttribute("fill", "#4b5563");
+        item.textContent = text;
+        svg.appendChild(item);
+      });
+      updateWallPreview();
+      populateRoomPositionFields();
+    }
+
+    function updateWallPreview() {
+      const svg = $("wallPreview");
+      if (!svg) return;
+      svg.innerHTML = "";
+      const shape = document.querySelector(".shape-btn.active")?.dataset.shape || "rect";
+      const draft = {
+        x: 55,
+        y: 25,
+        shape,
+        rotation: Number($("roomRotation")?.value || 0),
+        measures: {
+          a: shape === "l" ? 2.6 : 2.8,
+          b: 1.45,
+          c: 1.25,
+          d: .75
+        }
+      };
+      const pts = roomPolygon(draft);
+      const bounds = polygonBounds(pts);
+      const dx = 150 - (bounds.x + bounds.width / 2);
+      const dy = 80 - (bounds.y + bounds.height / 2);
+      const shifted = pts.map(([x, y]) => [x + dx, y + dy]);
+      const poly = document.createElementNS(NS, "polygon");
+      poly.setAttribute("points", shifted.map(p => p.join(",")).join(" "));
+      poly.setAttribute("fill", "#dff4f0");
+      poly.setAttribute("stroke", "#24958d");
+      poly.setAttribute("stroke-width", "4");
+      svg.appendChild(poly);
+      segments(shifted).forEach((seg, index) => {
+        const mid = segmentMidpoint(seg);
+        const circle = document.createElementNS(NS, "circle");
+        circle.setAttribute("cx", mid.x);
+        circle.setAttribute("cy", mid.y);
+        circle.setAttribute("r", "11");
+        circle.setAttribute("fill", "white");
+        circle.setAttribute("stroke", "#147c78");
+        svg.appendChild(circle);
+        const label = document.createElementNS(NS, "text");
+        label.setAttribute("x", mid.x);
+        label.setAttribute("y", mid.y + 4);
+        label.setAttribute("text-anchor", "middle");
+        label.setAttribute("font-size", "10");
+        label.setAttribute("font-weight", "800");
+        label.setAttribute("fill", "#147c78");
+        label.textContent = index + 1;
+        svg.appendChild(label);
+      });
     }
 
     function nextRoomPosition(measures = { a: 4.35, b: 3.45, c: 0, d: 0 }, shape = "rect") {
@@ -1714,7 +2056,8 @@
     function createRoom(formData) {
       pushHistory();
       const editing = state.project.rooms.find(r => r.id === state.editingRoomId);
-      const pos = editing ? { x: editing.x, y: editing.y } : nextRoomPosition(formData.measures, formData.shape);
+      const attachedPos = attachRoomPosition(formData);
+      const pos = editing ? { x: editing.x, y: editing.y } : (attachedPos || nextRoomPosition(formData.measures, formData.shape));
       const room = {
         id: editing?.id || uid(),
         name: formData.name,
@@ -1722,8 +2065,10 @@
         shape: formData.shape,
         x: pos.x,
         y: pos.y,
-        rotation: 0,
-        measures: formData.measures
+        rotation: formData.rotation,
+        measures: formData.measures,
+        label: formData.label,
+        showArea: formData.showArea
       };
       if (editing) {
         Object.assign(editing, room);
@@ -2129,6 +2474,21 @@
       });
     });
 
+    document.querySelectorAll(".room-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".room-tab").forEach(btn => btn.classList.toggle("active", btn === tab));
+        document.querySelectorAll(".room-page").forEach(page => {
+          page.classList.toggle("hidden", page.dataset.page !== tab.dataset.roomPage);
+        });
+        updatePreview();
+      });
+    });
+
+    ["measureA", "measureB", "measureC", "measureD", "roomRotation", "attachRoom"].forEach(id => {
+      $(id).addEventListener("input", updatePreview);
+      $(id).addEventListener("change", updatePreview);
+    });
+
     document.querySelectorAll("[data-layer]").forEach(input => {
       input.addEventListener("change", () => {
         state.layers[input.dataset.layer] = input.checked;
@@ -2205,7 +2565,7 @@
       if (deletePointBtn) deletePoint(deletePointBtn.dataset.deletePoint);
     });
 
-    ["projectTitle", "clientName", "projectAddress", "designerName", "projectDate", "projectRevision", "scaleSelect", "sheetSize"].forEach(id => {
+    ["projectTitle", "clientName", "projectAddress", "designerName", "projectDate", "projectRevision", "projectArea", "sheetNumber", "scaleSelect", "sheetSize"].forEach(id => {
       $(id).addEventListener("focus", () => {
         $(id).dataset.beforeValue = $(id).value;
       });
@@ -2255,6 +2615,13 @@
         name: $("roomName").value,
         category: $("roomCategory").value,
         shape,
+        rotation: Number($("roomRotation").value || 0),
+        attachRoomId: $("attachRoom").value,
+        attachWall: Number($("attachWall").value || 1),
+        newWall: Number($("newRoomWall").value || 1),
+        attachOffset: Number($("attachOffset").value || 0),
+        label: $("roomLabelText").value.trim(),
+        showArea: $("roomShowArea").value !== "no",
         measures: {
           a: Number($("measureA").value),
           b: Number($("measureB").value),
