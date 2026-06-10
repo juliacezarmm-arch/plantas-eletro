@@ -727,6 +727,11 @@
               <path d="M18.5 8.5A7 7 0 1 0 20 13"></path>
             </svg>
           </button>
+          <button id="toggleRibbonBtn" title="Exibir ou ocultar barra de ferramentas" aria-label="Exibir ou ocultar barra de ferramentas">
+            <svg class="quick-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 9l6 6 6-6"></path>
+            </svg>
+          </button>
         </div>
         <input id="fileInput" type="file" accept="application/json,.json" hidden>
       </div>
@@ -1451,20 +1456,33 @@
         return;
       }
       download(projectFileName(saveAs), text, "application/json");
-      toast("Projeto baixado em JSON.");
+      toast("Navegador sem permissao para sobrescrever. Projeto baixado em JSON.");
     }
 
-    function loadProject(file) {
+    function loadProject(file, handle = null) {
       const reader = new FileReader();
       reader.onload = () => {
         state.project = JSON.parse(reader.result);
-        state.fileHandle = null;
-        state.currentFileName = file.name || "";
+        state.fileHandle = handle;
+        state.currentFileName = handle?.name || file.name || "";
         state.selectedRoomId = state.project.rooms[0]?.id || null;
         render();
         toast("Projeto aberto.");
       };
       reader.readAsText(file);
+    }
+
+    async function openProject() {
+      if ("showOpenFilePicker" in window) {
+        const [handle] = await window.showOpenFilePicker({
+          multiple: false,
+          types: [{ description: "Projeto EletroPlanta JSON", accept: { "application/json": [".json"] } }]
+        });
+        const file = await handle.getFile();
+        loadProject(file, handle);
+        return;
+      }
+      $("fileInput").click();
     }
 
     function exportSvg() {
@@ -1619,9 +1637,9 @@
       });
     });
 
-    document.querySelector(".ribbon").addEventListener("dblclick", () => {
+    $("toggleRibbonBtn").onclick = () => {
       document.querySelector(".ribbon").classList.toggle("collapsed");
-    });
+    };
 
     document.querySelectorAll(".shape-btn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -1672,7 +1690,7 @@
     $("exportMainBtn").onclick = exportSelectedFormat;
     $("saveBtn").onclick = () => saveProject(false).catch(err => toast(err.message));
     $("saveAsBtn").onclick = () => saveProject(true).catch(err => toast(err.message));
-    $("openBtn").onclick = () => $("fileInput").click();
+    $("openBtn").onclick = () => openProject().catch(err => toast(err.message));
     $("undoBtn").onclick = () => toast("Desfazer ainda sera implementado.");
     $("redoBtn").onclick = () => toast("Refazer ainda sera implementado.");
     $("fileInput").onchange = (event) => event.target.files[0] && loadProject(event.target.files[0]);
