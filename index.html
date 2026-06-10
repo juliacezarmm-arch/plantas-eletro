@@ -1864,6 +1864,8 @@
       applyModelAppearance();
       if (state.workspaceMode === "print") drawSheet();
       if (state.layers.rooms) state.project.rooms.forEach(drawRoom);
+      if (state.layers.rooms) drawMasonryWalls();
+      if (state.layers.rooms) state.project.rooms.forEach(drawRoomAnnotations);
       drawWallDraft();
       if (state.layers.openings) state.project.openings.forEach(drawOpening);
       if (state.layers.circuits) drawCircuitLines();
@@ -2153,56 +2155,145 @@
       add("polygon", {
         points: pts.map(p => p.join(",")).join(" "),
         fill: selected ? "rgba(185, 246, 190, .28)" : "#fff",
-        stroke: "#c7d0da",
-        "stroke-width": 12,
+        stroke: "transparent",
+        "stroke-width": 0,
         "stroke-linejoin": "miter"
-      }, g);
-      add("polygon", {
-        points: pts.map(p => p.join(",")).join(" "),
-        fill: "transparent",
-        stroke: "#ffffff",
-        "stroke-width": 8,
-        "stroke-linejoin": "miter"
-      }, g);
-      add("polygon", {
-        points: pts.map(p => p.join(",")).join(" "),
-        fill: "transparent",
-        stroke: "#8e99a6",
-        "stroke-width": 1.2
       }, g);
 
+    }
+
+    function drawRoomAnnotations(room) {
+      if (!state.layers.labels) return;
+      const pts = roomPolygon(room);
+      const selected = room.id === state.selectedRoomId;
+      const g = add("g", { "data-room-labels": room.id, "pointer-events": "none" });
       const area = polygonAreaM2(pts);
       const labelPoint = polygonCentroid(pts);
       const cx = labelPoint.x;
       const cy = labelPoint.y;
-      if (state.layers.labels) {
-        add("text", { x: cx, y: cy - 4, "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: "#1f2933", "pointer-events": "none" }, g).textContent = room.label || room.name;
-        if (room.showArea !== false) {
-          add("text", { x: cx, y: cy + 12, "text-anchor": "middle", "font-size": 11, fill: "#303846", "pointer-events": "none" }, g).textContent = formatAreaM2(area);
+      add("text", { x: cx, y: cy - 4, "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: "#1f2933" }, g).textContent = room.label || room.name;
+      if (room.showArea !== false) {
+        add("text", { x: cx, y: cy + 12, "text-anchor": "middle", "font-size": 11, fill: "#303846" }, g).textContent = formatAreaM2(area);
+      }
+      segments(pts).forEach(([[x1, y1], [x2, y2]], index) => {
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        const len = Math.hypot(x2 - x1, y2 - y1) / PX;
+        const ang = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+        add("text", {
+          x: midX, y: midY - 8,
+          "text-anchor": "middle",
+          "font-size": 10,
+          fill: "#384250",
+          transform: `rotate(${Math.abs(ang) === 90 ? ang : 0} ${midX} ${midY})`
+        }, g).textContent = formatLengthM(len);
+        if (selected) {
+          add("circle", { cx: midX, cy: midY, r: 11, fill: "#fff", stroke: "#147c78", "stroke-width": 1.2 }, g);
+          add("text", { x: midX, y: midY + 4, "text-anchor": "middle", "font-size": 10, "font-weight": 800, fill: "#147c78" }, g).textContent = index + 1;
         }
-        segments(pts).forEach(([[x1, y1], [x2, y2]], index) => {
-          const midX = (x1 + x2) / 2;
-          const midY = (y1 + y2) / 2;
-          const len = Math.hypot(x2 - x1, y2 - y1) / PX;
-          const ang = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
-          add("text", {
-            x: midX, y: midY - 8,
-            "text-anchor": "middle",
-            "font-size": 10,
-            fill: "#384250",
-            "pointer-events": "none",
-            transform: `rotate(${Math.abs(ang) === 90 ? ang : 0} ${midX} ${midY})`
-          }, g).textContent = formatLengthM(len);
-          if (selected) {
-            add("circle", { cx: midX, cy: midY, r: 11, fill: "#fff", stroke: "#147c78", "stroke-width": 1.2, "pointer-events": "none" }, g);
-            add("text", { x: midX, y: midY + 4, "text-anchor": "middle", "font-size": 10, "font-weight": 800, fill: "#147c78", "pointer-events": "none" }, g).textContent = index + 1;
+      });
+      if (selected) {
+        const ref = pts[0];
+        add("text", { x: ref[0] + 10, y: ref[1] - 12, "font-size": 10, "font-weight": 700, fill: "#6b7280" }, g).textContent = "Esp. 15cm";
+      }
+    }
+
+    function normalizeWallSegment(seg) {
+      const [[x1, y1], [x2, y2]] = seg;
+      const ax = Math.round(x1);
+      const ay = Math.round(y1);
+      const bx = Math.round(x2);
+      const by = Math.round(y2);
+      const first = ax < bx || (ax === bx && ay <= by);
+      return first
+        ? { key: `${ax},${ay}|${bx},${by}`, x1: ax, y1: ay, x2: bx, y2: by }
+        : { key: `${bx},${by}|${ax},${ay}`, x1: bx, y1: by, x2: ax, y2: ay };
+    }
+
+    function collectMasonryWalls() {
+      const raw = [];
+      state.project.rooms.forEach(room => {
+        segments(roomPolygon(room)).forEach(seg => {
+          raw.push({ roomId: room.id, ...normalizeWallSegment(seg) });
+        });
+      });
+      const wallMap = new Map();
+      const addWall = (wall, roomIds) => {
+        if (wall.x1 === wall.x2 && wall.y1 === wall.y2) return;
+        const key = `${wall.x1},${wall.y1}|${wall.x2},${wall.y2}`;
+        if (!wallMap.has(key)) {
+          wallMap.set(key, { ...wall, key, rooms: new Set(roomIds) });
+        } else {
+          roomIds.forEach(id => wallMap.get(key).rooms.add(id));
+        }
+      };
+      const processAxis = (items, fixedKey, startKey, endKey, vertical) => {
+        const groups = new Map();
+        items.forEach(item => {
+          const fixed = item[fixedKey];
+          if (!groups.has(fixed)) groups.set(fixed, []);
+          groups.get(fixed).push(item);
+        });
+        groups.forEach(group => {
+          const cuts = [...new Set(group.flatMap(item => [item[startKey], item[endKey]]))].sort((a, b) => a - b);
+          for (let i = 0; i < cuts.length - 1; i++) {
+            const a = cuts[i];
+            const b = cuts[i + 1];
+            if (a === b) continue;
+            const mid = (a + b) / 2;
+            const covering = group.filter(item => item[startKey] <= mid && item[endKey] >= mid);
+            if (!covering.length) continue;
+            const roomIds = new Set(covering.map(item => item.roomId));
+            const fixed = group[0][fixedKey];
+            addWall(vertical
+              ? { x1: fixed, y1: a, x2: fixed, y2: b }
+              : { x1: a, y1: fixed, x2: b, y2: fixed },
+              roomIds);
           }
         });
-        if (selected) {
-          const ref = pts[0];
-          add("text", { x: ref[0] + 10, y: ref[1] - 12, "font-size": 10, "font-weight": 700, fill: "#6b7280", "pointer-events": "none" }, g).textContent = "Esp. 15cm";
-        }
-      }
+      };
+      const horizontal = raw
+        .filter(item => item.y1 === item.y2)
+        .map(item => ({ ...item, start: Math.min(item.x1, item.x2), end: Math.max(item.x1, item.x2), fixed: item.y1 }));
+      const vertical = raw
+        .filter(item => item.x1 === item.x2)
+        .map(item => ({ ...item, start: Math.min(item.y1, item.y2), end: Math.max(item.y1, item.y2), fixed: item.x1 }));
+      processAxis(horizontal, "fixed", "start", "end", false);
+      processAxis(vertical, "fixed", "start", "end", true);
+      raw
+        .filter(item => item.x1 !== item.x2 && item.y1 !== item.y2)
+        .forEach(item => addWall(item, new Set([item.roomId])));
+      return [...wallMap.values()];
+    }
+
+    function drawMasonryWalls() {
+      const g = add("g", { "data-layer": "masonry" });
+      const walls = collectMasonryWalls();
+      walls.forEach(wall => {
+        const shared = wall.rooms.size > 1;
+        add("line", {
+          x1: wall.x1, y1: wall.y1, x2: wall.x2, y2: wall.y2,
+          stroke: shared ? "#d2d8df" : "#c5cdd6",
+          "stroke-width": shared ? 8 : 12,
+          "stroke-linecap": "square"
+        }, g);
+      });
+      walls.forEach(wall => {
+        add("line", {
+          x1: wall.x1, y1: wall.y1, x2: wall.x2, y2: wall.y2,
+          stroke: "#ffffff",
+          "stroke-width": wall.rooms.size > 1 ? 4.5 : 7,
+          "stroke-linecap": "square"
+        }, g);
+      });
+      walls.forEach(wall => {
+        add("line", {
+          x1: wall.x1, y1: wall.y1, x2: wall.x2, y2: wall.y2,
+          stroke: "#9da7b3",
+          "stroke-width": .9,
+          "stroke-linecap": "square"
+        }, g);
+      });
     }
 
     function drawWallDraft() {
