@@ -2186,7 +2186,7 @@
           "font-size": 10,
           fill: "#384250",
           transform: `rotate(${Math.abs(ang) === 90 ? ang : 0} ${midX} ${midY})`
-        }, g).textContent = formatLengthM(len);
+        }, g).textContent = formatLengthM(len, true);
         if (selected) {
           add("circle", { cx: midX, cy: midY, r: 11, fill: "#fff", stroke: "#147c78", "stroke-width": 1.2 }, g);
           add("text", { x: midX, y: midY + 4, "text-anchor": "middle", "font-size": 10, "font-weight": 800, fill: "#147c78" }, g).textContent = index + 1;
