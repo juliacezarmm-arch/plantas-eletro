@@ -811,6 +811,46 @@
       display: none;
     }
 
+    .nudge-panel {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid #e1e7ee;
+      border-radius: 6px;
+      background: white;
+    }
+
+    .nudge-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 40px);
+      grid-template-rows: repeat(3, 40px);
+      gap: 5px;
+      justify-content: center;
+    }
+
+    .nudge-pad button {
+      min-height: 40px;
+      padding: 0;
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .rotation-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .rotation-buttons button {
+      min-height: 30px;
+      padding: 4px 6px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
     .shape-grid {
       display: grid;
       grid-template-columns: repeat(4, 42px);
@@ -1043,6 +1083,7 @@
               <button class="tool" data-tool="switch" title="Adiciona um interruptor no ambiente selecionado."><span class="tool-icon">I</span>Interruptor</button>
               <button class="tool" data-tool="conduit" title="Liga pontos do mesmo circuito com linhas de eletroduto."><span class="tool-icon">E</span>Eletroduto</button>
               <button class="tool" data-tool="panel" title="Adiciona um quadro no ambiente selecionado."><span class="tool-icon">Q</span>Quadro</button>
+              <button class="tool" data-tool="wall" title="Desenha um ambiente livre clicando nos pontos das paredes."><span class="tool-icon">P</span>Parede</button>
               <button class="tool" data-tool="delete" title="Exclui o ambiente ou ponto selecionado."><span class="tool-icon">X</span>Excluir</button>
             </div>
           </div>
@@ -1323,6 +1364,31 @@
                 </label>
                 <label>Deslocamento m <input id="attachOffset" type="number" step="0.05" value="0"></label>
               </div>
+              <div class="nudge-panel">
+                <div class="nudge-pad" aria-label="Mover ambiente">
+                  <span></span>
+                  <button type="button" data-nudge-room="0,-1" title="Mover para cima">↑</button>
+                  <span></span>
+                  <button type="button" data-nudge-room="-1,0" title="Mover para esquerda">←</button>
+                  <button type="button" data-nudge-room="0,0" title="Centralizar selecao">•</button>
+                  <button type="button" data-nudge-room="1,0" title="Mover para direita">→</button>
+                  <span></span>
+                  <button type="button" data-nudge-room="0,1" title="Mover para baixo">↓</button>
+                  <span></span>
+                </div>
+                <div class="field-stack">
+                  <div class="cols-2">
+                    <label>Passo cm <input id="positionStepCm" type="number" min="1" step="1" value="15"></label>
+                    <label>Angulo <input id="positionAngle" type="number" step="1" value="0"></label>
+                  </div>
+                  <div class="rotation-buttons">
+                    <button type="button" data-rotate-room="0">0°</button>
+                    <button type="button" data-rotate-room="90">90°</button>
+                    <button type="button" data-rotate-room="180">180°</button>
+                    <button type="button" data-rotate-room="270">270°</button>
+                  </div>
+                </div>
+              </div>
             </section>
 
             <section class="room-page hidden" data-page="label">
@@ -1360,6 +1426,7 @@
       editingRoomId: null,
       editingPointId: null,
       previewPoint: null,
+      wallDraft: [],
       zoom: 1,
       workspaceMode: "model",
       unit: "m",
@@ -1438,6 +1505,7 @@
       state.editingRoomId = null;
       state.editingPointId = null;
       state.previewPoint = null;
+      state.wallDraft = [];
       render();
     }
 
@@ -1477,9 +1545,11 @@
     }
 
     function roomPolygon(room) {
-      const m = room.measures;
+      const m = room.measures || {};
       let pts;
-      if (room.shape === "l") {
+      if (room.shape === "poly" && Array.isArray(room.points) && room.points.length >= 3) {
+        pts = room.points;
+      } else if (room.shape === "l") {
         const a = m.a * PX, b = m.b * PX, c = m.c * PX, d = m.d * PX;
         pts = [
           [0, 0],
@@ -1695,6 +1765,7 @@
       applyModelAppearance();
       if (state.workspaceMode === "print") drawSheet();
       if (state.layers.rooms) state.project.rooms.forEach(drawRoom);
+      drawWallDraft();
       if (state.layers.openings) state.project.openings.forEach(drawOpening);
       if (state.layers.circuits) drawCircuitLines();
       if (state.layers.points) state.project.points.forEach(drawPoint);
@@ -1805,6 +1876,27 @@
             add("text", { x: midX, y: midY + 4, "text-anchor": "middle", "font-size": 10, "font-weight": 800, fill: "#147c78", "pointer-events": "none" }, g).textContent = index + 1;
           }
         });
+      }
+    }
+
+    function drawWallDraft() {
+      if (!state.wallDraft.length) return;
+      const points = state.wallDraft.map(p => `${p.x},${p.y}`).join(" ");
+      const g = add("g", { "data-draft": "wall" });
+      add("polyline", {
+        points,
+        fill: "none",
+        stroke: "#147c78",
+        "stroke-width": 2,
+        "stroke-dasharray": "8 5"
+      }, g);
+      state.wallDraft.forEach((point, index) => {
+        add("circle", { cx: point.x, cy: point.y, r: 6, fill: "#fff", stroke: "#147c78", "stroke-width": 2 }, g);
+        add("text", { x: point.x, y: point.y - 10, "text-anchor": "middle", "font-size": 10, "font-weight": 800, fill: "#147c78" }, g).textContent = index + 1;
+      });
+      if (state.wallDraft.length >= 3) {
+        const first = state.wallDraft[0];
+        add("circle", { cx: first.x, cy: first.y, r: 12, fill: "rgba(20,124,120,.12)", stroke: "#147c78", "stroke-width": 1.2 }, g);
       }
     }
 
@@ -2027,12 +2119,14 @@
     }
 
     function setActiveShape(shape) {
+      const wantedShape = shape === "poly" ? "rect" : shape;
       let activated = false;
       document.querySelectorAll(".shape-btn").forEach(btn => {
-        const shouldActivate = !activated && btn.dataset.shape === shape;
+        const shouldActivate = !activated && btn.dataset.shape === wantedShape;
         btn.classList.toggle("active", shouldActivate);
         if (shouldActivate) activated = true;
       });
+      if (!activated) document.querySelector('.shape-btn[data-shape="rect"]')?.classList.add("active");
       updatePreview();
     }
 
@@ -2049,7 +2143,8 @@
         $("measureB").value = room.measures.b;
         $("measureC").value = room.measures.c || 0;
         $("measureD").value = room.measures.d || 0;
-        $("roomRotation").value = room.rotation || 0;
+        $("roomRotation").value = [0, 90, 180, 270].includes(Number(room.rotation || 0)) ? room.rotation || 0 : 0;
+        $("positionAngle").value = Number(room.rotation || 0);
         $("roomLabelText").value = room.label || "";
         $("roomShowArea").value = room.showArea === false ? "no" : "yes";
         setActiveShape(room.shape || "rect");
@@ -2062,6 +2157,7 @@
         $("measureC").value = 2.8;
         $("measureD").value = 2.55;
         $("roomRotation").value = 0;
+        $("positionAngle").value = 0;
         $("attachOffset").value = 0;
         $("roomLabelText").value = "";
         $("roomShowArea").value = "yes";
@@ -2225,16 +2321,19 @@
         const base = roomBounds(selected);
         candidates.push({ x: base.maxX + 12, y: base.y });
         candidates.push({ x: base.x, y: base.maxY + 12 });
-        candidates.push({ x: Math.max(54, base.x - size.width - 12), y: base.y });
+        candidates.push({ x: base.x - size.width - 12, y: base.y });
       }
-      for (let y = 70; y <= 590; y += 42) {
-        for (let x = 70; x <= 930; x += 42) candidates.push({ x, y });
+      const range = state.workspaceMode === "model"
+        ? { minX: -160, minY: -120, maxX: 1860, maxY: 1120 }
+        : { minX: 54, minY: 54, maxX: 1068, maxY: 620 };
+      for (let y = state.workspaceMode === "model" ? -80 : 70; y <= range.maxY; y += 42) {
+        for (let x = state.workspaceMode === "model" ? -120 : 70; x <= range.maxX; x += 42) candidates.push({ x, y });
       }
       return candidates.find(pos => {
         const box = { x: pos.x, y: pos.y, maxX: pos.x + size.width, maxY: pos.y + size.height };
-        const insideSheet = box.x >= 54 && box.y >= 54 && box.maxX <= 1068 && box.maxY <= 620;
-        return insideSheet && existing.every(other => !overlaps(box, other, 8));
-      }) || { x: 90, y: 90 };
+        const insideArea = box.x >= range.minX && box.y >= range.minY && box.maxX <= range.maxX && box.maxY <= range.maxY;
+        return insideArea && existing.every(other => !overlaps(box, other, 8));
+      }) || { x: state.workspaceMode === "model" ? 0 : 90, y: state.workspaceMode === "model" ? 0 : 90 };
     }
 
     function createRoom(formData) {
@@ -2246,11 +2345,12 @@
         id: editing?.id || uid(),
         name: formData.name,
         category: formData.category,
-        shape: formData.shape,
+        shape: editing?.shape === "poly" ? "poly" : formData.shape,
         x: pos.x,
         y: pos.y,
         rotation: formData.rotation,
-        measures: formData.measures,
+        measures: editing?.shape === "poly" ? editing.measures : formData.measures,
+        points: editing?.shape === "poly" ? editing.points : undefined,
         label: formData.label,
         showArea: formData.showArea
       };
@@ -2472,6 +2572,7 @@
         state.fileHandle = handle;
         state.currentFileName = handle?.name || file.name || "";
         state.selectedRoomId = state.project.rooms[0]?.id || null;
+        state.wallDraft = [];
         applyModelAppearance();
         render();
         toast("Projeto aberto.");
@@ -2571,6 +2672,101 @@
       return state.project.rooms.find(r => r.id === state.selectedRoomId) || state.project.rooms[0];
     }
 
+    function activePositionRoom() {
+      return state.project.rooms.find(r => r.id === state.editingRoomId) || selectedRoom();
+    }
+
+    function nudgeActiveRoom(dx, dy) {
+      const room = activePositionRoom();
+      if (!room) {
+        toast("Selecione um ambiente para mover.");
+        return;
+      }
+      const stepCm = Math.max(1, Number($("positionStepCm")?.value) || 15);
+      const stepPx = stepCm / 100 * PX;
+      pushHistory();
+      room.x += dx * stepPx;
+      room.y += dy * stepPx;
+      state.selectedRoomId = room.id;
+      render();
+      toast(`Ambiente movido ${stepCm} cm.`);
+    }
+
+    function rotateActiveRoom(angle) {
+      const room = activePositionRoom();
+      const normalized = ((Number(angle) || 0) % 360 + 360) % 360;
+      if ($("positionAngle")) $("positionAngle").value = normalized;
+      if ($("roomRotation") && [0, 90, 180, 270].includes(normalized)) $("roomRotation").value = String(normalized);
+      if (!room) return;
+      pushHistory();
+      room.rotation = normalized;
+      state.selectedRoomId = room.id;
+      render();
+      toast(`Rotacao ajustada para ${normalized} graus.`);
+    }
+
+    function svgPointFromEvent(event) {
+      const point = drawing.createSVGPoint();
+      point.x = event.clientX;
+      point.y = event.clientY;
+      const ctm = drawing.getScreenCTM();
+      if (!ctm) return { x: 0, y: 0 };
+      const result = point.matrixTransform(ctm.inverse());
+      return { x: result.x, y: result.y };
+    }
+
+    function addWallDraftPoint(x, y) {
+      const first = state.wallDraft[0];
+      if (first && state.wallDraft.length >= 3 && Math.hypot(x - first.x, y - first.y) <= 16) {
+        finishWallRoom();
+        return;
+      }
+      state.wallDraft.push({ x, y });
+      render();
+      toast(state.wallDraft.length >= 3 ? "Clique no primeiro ponto, de dois cliques ou pressione Enter para fechar." : "Clique no proximo ponto da parede.");
+    }
+
+    function finishWallRoom() {
+      if (state.wallDraft.length < 3) {
+        toast("Desenhe pelo menos tres pontos para fechar o ambiente.");
+        return;
+      }
+      pushHistory();
+      const xs = state.wallDraft.map(p => p.x);
+      const ys = state.wallDraft.map(p => p.y);
+      const x = Math.min(...xs);
+      const y = Math.min(...ys);
+      const points = state.wallDraft.map(p => [p.x - x, p.y - y]);
+      const number = state.project.rooms.length + 1;
+      const room = {
+        id: uid(),
+        name: `Ambiente ${String(number).padStart(2, "0")}`,
+        category: "Ambiente",
+        shape: "poly",
+        x,
+        y,
+        rotation: 0,
+        measures: { a: 0, b: 0, c: 0, d: 0 },
+        points,
+        label: "",
+        showArea: true
+      };
+      state.project.rooms.push(room);
+      state.selectedRoomId = room.id;
+      state.selectedPointId = null;
+      state.wallDraft = [];
+      render();
+      showSideSection("rooms");
+      toast("Ambiente criado pelas paredes.");
+    }
+
+    function cancelWallDraft() {
+      if (!state.wallDraft.length) return;
+      state.wallDraft = [];
+      render();
+      toast("Desenho de paredes cancelado.");
+    }
+
     function requireRoom() {
       const room = selectedRoom();
       if (!room) {
@@ -2632,6 +2828,10 @@
         document.querySelector('[data-layer="circuits"]').checked = true;
         render();
         toast("Eletrodutos aparecem como linhas entre pontos do mesmo circuito.");
+      } else if (tool === "wall") {
+        state.wallDraft = [];
+        render();
+        toast("Clique nos pontos das paredes. Enter ou dois cliques fecha o ambiente; Esc cancela.");
       } else if (tool === "delete") {
         deleteSelection();
       }
@@ -2667,6 +2867,32 @@
         });
         updatePreview();
       });
+    });
+
+    document.querySelectorAll("[data-nudge-room]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const [dx, dy] = btn.dataset.nudgeRoom.split(",").map(Number);
+        if (dx === 0 && dy === 0) {
+          const room = activePositionRoom();
+          if (!room) return toast("Selecione um ambiente para centralizar.");
+          state.selectedRoomId = room.id;
+          render();
+          return;
+        }
+        nudgeActiveRoom(dx, dy);
+      });
+    });
+
+    document.querySelectorAll("[data-rotate-room]").forEach(btn => {
+      btn.addEventListener("click", () => rotateActiveRoom(btn.dataset.rotateRoom));
+    });
+
+    $("positionAngle").addEventListener("change", () => rotateActiveRoom($("positionAngle").value));
+    $("roomRotation").addEventListener("change", () => {
+      $("positionAngle").value = $("roomRotation").value;
+      const room = state.editingRoomId ? activePositionRoom() : null;
+      if (room) rotateActiveRoom($("roomRotation").value);
+      else updatePreview();
     });
 
     ["measureA", "measureB", "measureC", "measureD", "roomRotation", "attachRoom"].forEach(id => {
@@ -2852,7 +3078,7 @@
     $("cancelRoom").onclick = closeRoomDialog;
     $("roomForm").onsubmit = (event) => {
       event.preventDefault();
-      const shape = document.querySelector(".shape-btn.active").dataset.shape;
+      const shape = document.querySelector(".shape-btn.active")?.dataset.shape || "rect";
       createRoom({
         name: $("roomName").value,
         category: $("roomCategory").value,
@@ -2899,6 +3125,16 @@
 
     document.addEventListener("keydown", (event) => {
       const key = event.key.toLowerCase();
+      if (state.tool === "wall" && key === "escape") {
+        event.preventDefault();
+        cancelWallDraft();
+        return;
+      }
+      if (state.tool === "wall" && key === "enter") {
+        event.preventDefault();
+        finishWallRoom();
+        return;
+      }
       if ((event.ctrlKey || event.metaKey) && key === "z" && !event.shiftKey) {
         event.preventDefault();
         undoAction();
@@ -2910,9 +3146,11 @@
     });
 
     drawing.addEventListener("click", (event) => {
-      const rect = drawing.getBoundingClientRect();
-      const x = (event.clientX - rect.left) * 1122 / rect.width;
-      const y = (event.clientY - rect.top) * 794 / rect.height;
+      const { x, y } = svgPointFromEvent(event);
+      if (state.tool === "wall") {
+        addWallDraftPoint(x, y);
+        return;
+      }
       if (state.tool === "panel") {
         pushHistory();
         state.project.points.push({ id: uid(), roomId: state.selectedRoomId, type: "panel", power: 0, circuit: 1, wall: 0, offset: 0, inset: 0, x, y, angle: 0 });
@@ -2922,6 +3160,12 @@
         state.selectedRoomId = null;
         render();
       }
+    });
+
+    drawing.addEventListener("dblclick", (event) => {
+      if (state.tool !== "wall") return;
+      event.preventDefault();
+      finishWallRoom();
     });
 
     applyModelAppearance();
