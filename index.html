@@ -264,12 +264,12 @@
 
     .tool-stack {
       display: grid;
-      grid-template-columns: repeat(5, 56px);
+      grid-template-columns: repeat(5, 58px);
       gap: 4px;
     }
 
     .tool {
-      width: 56px;
+      width: 58px;
       min-height: 38px;
       display: grid;
       justify-items: center;
@@ -379,6 +379,7 @@
       border: 1px solid #aeb8c4;
       box-shadow: var(--shadow);
       position: relative;
+      transform-origin: 0 0;
     }
 
     #drawing {
@@ -398,12 +399,22 @@
 
     .workspace.side-collapsed .side-body,
     .workspace.side-collapsed .side-tabs,
-    .workspace.side-collapsed .side-head p {
+    .workspace.side-collapsed .side-head p,
+    .workspace.side-collapsed .side-head h2 {
       display: none;
     }
 
     .workspace.side-collapsed .side {
       overflow: hidden;
+    }
+
+    .workspace.side-collapsed .side-head {
+      padding: 10px 6px;
+      justify-items: center;
+    }
+
+    .workspace.side-collapsed .side-title-row {
+      justify-content: center;
     }
 
     .side-head {
@@ -527,14 +538,55 @@
       padding: 8px;
       background: #fff;
       display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 6px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
       align-items: center;
       font-size: 12px;
+      text-align: left;
+      width: 100%;
     }
 
-    .row-card strong { font-size: 13px; }
-    .row-card span { color: var(--muted); }
+    .row-card.selected {
+      border-color: var(--teal);
+      background: var(--teal-2);
+    }
+
+    .row-card-main {
+      border: 0;
+      background: transparent;
+      min-height: 0;
+      padding: 0;
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+      justify-items: start;
+    }
+
+    .row-card strong {
+      color: var(--ink);
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .row-card small {
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .row-actions button {
+      min-height: 26px;
+      padding: 3px 7px;
+      font-size: 11px;
+    }
 
     .table {
       width: 100%;
@@ -807,7 +859,7 @@
         <div class="tool-group">
           <div class="tool-group-content">
             <div class="tool-stack">
-              <button class="tool active" data-tool="select" title="Seleciona ambientes na lista e destaca na planta."><span class="tool-icon">P</span>Selecionar</button>
+              <button class="tool active" data-tool="select" title="Seleciona ambientes e pontos direto na planta."><span class="tool-icon">S</span>Selecionar</button>
               <button class="tool" id="roomBtn" title="Abre o formulario para criar um ambiente."><span class="tool-icon">A</span>Ambiente</button>
               <button class="tool" data-tool="door" title="Adiciona uma porta no ambiente selecionado."><span class="tool-icon">D</span>Porta</button>
               <button class="tool" data-tool="window" title="Adiciona uma janela no ambiente selecionado."><span class="tool-icon">J</span>Janela</button>
@@ -816,6 +868,7 @@
               <button class="tool" data-tool="switch" title="Adiciona um interruptor no ambiente selecionado."><span class="tool-icon">I</span>Interruptor</button>
               <button class="tool" data-tool="conduit" title="Liga pontos do mesmo circuito com linhas de eletroduto."><span class="tool-icon">E</span>Eletroduto</button>
               <button class="tool" data-tool="panel" title="Adiciona um quadro no ambiente selecionado."><span class="tool-icon">Q</span>Quadro</button>
+              <button class="tool" data-tool="delete" title="Exclui o ambiente ou ponto selecionado."><span class="tool-icon">X</span>Excluir</button>
             </div>
           </div>
           <div class="group-label">Ferramentas de Desenho</div>
@@ -918,6 +971,10 @@
                 <label>Projetista <input id="designerName" value="Projetista"></label>
                 <label>Data <input id="projectDate" type="date"></label>
               </div>
+              <div class="cols-2">
+                <label>Revisao <input id="projectRevision" value="Rev. 01"></label>
+                <label>Logo <input id="logoInput" type="file" accept="image/*"></label>
+              </div>
             </div>
           </section>
 
@@ -929,7 +986,7 @@
           </section>
 
           <section class="panel side-section hidden" data-section="points">
-            <div class="panel-title">Ponto Eletrico</div>
+            <div class="panel-title">Ponto Eletrico <button type="button" id="newPointBtn">Novo ponto</button></div>
             <div class="panel-body">
               <div class="cols-2">
                 <label>Ambiente <select id="pointRoom"></select></label>
@@ -945,13 +1002,14 @@
               <div class="cols-3">
                 <label>Potencia VA <input id="pointPower" type="number" value="100"></label>
                 <label>Circuito <input id="pointCircuit" type="number" value="1"></label>
-                <label>Parede <input id="pointWall" type="number" value="1"></label>
+                <label>Parede <select id="pointWall"></select></label>
               </div>
               <div class="cols-2">
                 <label>Deslocamento m <input id="pointOffset" type="number" step="0.05" value="0.5"></label>
                 <label>Afastamento m <input id="pointInset" type="number" step="0.05" value="0"></label>
               </div>
               <button class="primary" id="addPointBtn">Aplicar ponto</button>
+              <div id="pointsList" class="list"></div>
             </div>
           </section>
 
@@ -1041,6 +1099,11 @@
       currentFileName: "",
       tool: "select",
       selectedRoomId: null,
+      selectedPointId: null,
+      editingRoomId: null,
+      editingPointId: null,
+      previewPoint: null,
+      zoom: 1,
       undoStack: [],
       redoStack: [],
       layers: { rooms: true, openings: true, points: true, labels: true, circuits: true, sheet: true },
@@ -1050,6 +1113,8 @@
         address: "Rua da Aurora, Recife - PE",
         designer: "Projetista",
         date: new Date().toISOString().slice(0, 10),
+        revision: "Rev. 01",
+        logoDataUrl: "",
         scale: "1:50",
         sheet: "A3 Paisagem",
         rooms: [],
@@ -1065,9 +1130,34 @@
       return JSON.stringify(state.project);
     }
 
+    function normalizeProject(project) {
+      return {
+        title: "Planta Eletrica Residencial",
+        client: "Cliente",
+        address: "Rua da Aurora, Recife - PE",
+        designer: "Projetista",
+        date: new Date().toISOString().slice(0, 10),
+        revision: "Rev. 01",
+        logoDataUrl: "",
+        scale: "1:50",
+        sheet: "A3 Paisagem",
+        rooms: [],
+        openings: [],
+        points: [],
+        ...project,
+        rooms: Array.isArray(project?.rooms) ? project.rooms : [],
+        openings: Array.isArray(project?.openings) ? project.openings : [],
+        points: Array.isArray(project?.points) ? project.points : []
+      };
+    }
+
     function restoreSnapshot(snapshot) {
-      state.project = JSON.parse(snapshot);
-      state.selectedRoomId = state.project.rooms[0]?.id || null;
+      state.project = normalizeProject(JSON.parse(snapshot));
+      state.selectedRoomId = state.project.rooms.find(r => r.id === state.selectedRoomId)?.id || state.project.rooms[0]?.id || null;
+      state.selectedPointId = state.project.points.find(p => p.id === state.selectedPointId)?.id || null;
+      state.editingRoomId = null;
+      state.editingPointId = null;
+      state.previewPoint = null;
       render();
     }
 
@@ -1145,6 +1235,34 @@
       return segments(points).reduce((acc, [[x1, y1], [x2, y2]]) => acc + Math.hypot(x2 - x1, y2 - y1) / PX, 0);
     }
 
+    function polygonBounds(points) {
+      const xs = points.map(p => p[0]);
+      const ys = points.map(p => p[1]);
+      return {
+        x: Math.min(...xs),
+        y: Math.min(...ys),
+        maxX: Math.max(...xs),
+        maxY: Math.max(...ys),
+        width: Math.max(...xs) - Math.min(...xs),
+        height: Math.max(...ys) - Math.min(...ys)
+      };
+    }
+
+    function roomBounds(room) {
+      return polygonBounds(roomPolygon(room));
+    }
+
+    function overlaps(a, b, gap = 16) {
+      return !(a.maxX + gap <= b.x || b.maxX + gap <= a.x || a.maxY + gap <= b.y || b.maxY + gap <= a.y);
+    }
+
+    function roomSegmentOptions(room) {
+      return segments(roomPolygon(room)).map(([[x1, y1], [x2, y2]], index) => ({
+        number: index + 1,
+        lengthM: Math.hypot(x2 - x1, y2 - y1) / PX
+      }));
+    }
+
     function wallPoint(room, wallNumber, offsetM, insetM = 0) {
       const segs = segments(roomPolygon(room));
       const seg = segs[Math.max(0, Math.min(segs.length - 1, wallNumber - 1))];
@@ -1176,6 +1294,7 @@
       if (state.layers.openings) state.project.openings.forEach(drawOpening);
       if (state.layers.circuits) drawCircuitLines();
       if (state.layers.points) state.project.points.forEach(drawPoint);
+      if (state.layers.points && state.previewPoint) drawPoint(state.previewPoint);
       drawTitleBlock();
       renderLists();
       syncProjectFields();
@@ -1192,39 +1311,51 @@
     function drawTitleBlock() {
       const p = state.project;
       add("text", { x: 870, y: 660, "font-size": 14, "font-weight": 700, fill: "#1f2933" }).textContent = p.title || "Planta Eletrica";
-      add("text", { x: 770, y: 660, "font-size": 13, "font-weight": 800, fill: "#d45b2a" }).textContent = "EP";
+      if (p.logoDataUrl) {
+        add("image", { x: 770, y: 646, width: 78, height: 34, href: p.logoDataUrl, preserveAspectRatio: "xMidYMid meet" });
+      } else {
+        add("text", { x: 770, y: 660, "font-size": 13, "font-weight": 800, fill: "#d45b2a" }).textContent = "EP";
+      }
       add("text", { x: 870, y: 688, "font-size": 9, fill: "#4b5563" }).textContent = "CLIENTE";
       add("text", { x: 870, y: 704, "font-size": 12, fill: "#111827" }).textContent = p.client || "";
       add("text", { x: 990, y: 688, "font-size": 9, fill: "#4b5563" }).textContent = "ESCALA";
       add("text", { x: 990, y: 704, "font-size": 12, fill: "#111827" }).textContent = p.scale;
-      add("text", { x: 990, y: 720, "font-size": 10, fill: "#4b5563" }).textContent = p.date || "";
+      add("text", { x: 990, y: 720, "font-size": 10, fill: "#4b5563" }).textContent = `${p.revision || ""} ${p.date || ""}`.trim();
       add("text", { x: 770, y: 716, "font-size": 10, fill: "#4b5563" }).textContent = p.address || "";
     }
 
     function drawRoom(room) {
       const pts = roomPolygon(room);
       const selected = room.id === state.selectedRoomId;
+      const g = add("g", { "data-room-id": room.id, cursor: "pointer" });
+      g.addEventListener("click", (event) => {
+        event.stopPropagation();
+        state.selectedRoomId = room.id;
+        state.selectedPointId = null;
+        if ($("pointRoom")) $("pointRoom").value = room.id;
+        render();
+      });
       add("polygon", {
         points: pts.map(p => p.join(",")).join(" "),
         fill: selected ? "#c8f8c7" : "#fff",
         stroke: "#b6bec8",
         "stroke-width": 8,
         "stroke-linejoin": "miter"
-      });
+      }, g);
       add("polygon", {
         points: pts.map(p => p.join(",")).join(" "),
         fill: selected ? "rgba(123, 222, 134, .34)" : "transparent",
         stroke: "#8e99a6",
         "stroke-width": 1.2
-      });
+      }, g);
 
       const area = polygonAreaM2(pts);
       const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length;
       const cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
       if (state.layers.labels) {
-        add("text", { x: cx, y: cy - 4, "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: "#1f2933" }).textContent = room.name;
-        add("text", { x: cx, y: cy + 12, "text-anchor": "middle", "font-size": 11, fill: "#303846" }).textContent = `${area.toFixed(2)}mÂ²`;
-        segments(pts).forEach(([[x1, y1], [x2, y2]]) => {
+        add("text", { x: cx, y: cy - 4, "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: "#1f2933", "pointer-events": "none" }, g).textContent = room.name;
+        add("text", { x: cx, y: cy + 12, "text-anchor": "middle", "font-size": 11, fill: "#303846", "pointer-events": "none" }, g).textContent = `${area.toFixed(2)}m²`;
+        segments(pts).forEach(([[x1, y1], [x2, y2]], index) => {
           const midX = (x1 + x2) / 2;
           const midY = (y1 + y2) / 2;
           const len = Math.hypot(x2 - x1, y2 - y1) / PX;
@@ -1234,8 +1365,13 @@
             "text-anchor": "middle",
             "font-size": 10,
             fill: "#384250",
+            "pointer-events": "none",
             transform: `rotate(${Math.abs(ang) === 90 ? ang : 0} ${midX} ${midY})`
-          }).textContent = len.toFixed(2).replace(".", ",");
+          }, g).textContent = len.toFixed(2).replace(".", ",");
+          if (selected) {
+            add("circle", { cx: midX, cy: midY, r: 11, fill: "#fff", stroke: "#147c78", "stroke-width": 1.2, "pointer-events": "none" }, g);
+            add("text", { x: midX, y: midY + 4, "text-anchor": "middle", "font-size": 10, "font-weight": 800, fill: "#147c78", "pointer-events": "none" }, g).textContent = index + 1;
+          }
         });
       }
     }
@@ -1278,7 +1414,24 @@
     }
 
     function drawPoint(point) {
-      const g = add("g", { transform: `translate(${point.x} ${point.y}) rotate(${point.angle || 0})` });
+      const selected = point.id && point.id === state.selectedPointId;
+      const preview = point.preview;
+      const g = add("g", {
+        transform: `translate(${point.x} ${point.y}) rotate(${point.angle || 0})`,
+        cursor: point.id ? "pointer" : "default",
+        opacity: preview ? .65 : 1
+      });
+      if (point.id) {
+        g.addEventListener("click", (event) => {
+          event.stopPropagation();
+          state.selectedPointId = point.id;
+          state.selectedRoomId = point.roomId || state.selectedRoomId;
+          render();
+        });
+      }
+      if (selected || preview) {
+        add("circle", { cx: 0, cy: 0, r: 20, fill: preview ? "#dff4f0" : "none", stroke: preview ? "#147c78" : "#1f7a75", "stroke-width": 2, "stroke-dasharray": preview ? "4 3" : "none" }, g);
+      }
       if (point.type === "outlet") {
         add("path", { d: "M -9 0 L 0 -12 L 9 0 Z", fill: "white", stroke: "#1f2933", "stroke-width": 1.5 }, g);
       } else if (point.type === "light") {
@@ -1292,8 +1445,8 @@
         add("rect", { x: -16, y: -8, width: 32, height: 16, fill: "#222", stroke: "#111", "stroke-width": 1 }, g);
       }
       if (state.layers.labels) {
-        add("text", { x: point.x + 10, y: point.y - 9, "font-size": 10, fill: "#111827" }).textContent = `${point.power}VA`;
-        add("text", { x: point.x + 10, y: point.y + 4, "font-size": 10, fill: "#111827" }).textContent = `-${point.circuit}-`;
+        add("text", { x: point.x + 10, y: point.y - 9, "font-size": 10, fill: "#111827", "pointer-events": "none" }).textContent = `${point.power}VA`;
+        add("text", { x: point.x + 10, y: point.y + 4, "font-size": 10, fill: "#111827", "pointer-events": "none" }).textContent = `-${point.circuit}-`;
       }
     }
 
@@ -1309,10 +1462,15 @@
       roomsList.innerHTML = "";
       state.project.rooms.forEach(room => {
         const pts = roomPolygon(room);
-        const card = document.createElement("button");
+        const card = document.createElement("div");
         card.className = "row-card";
-        card.innerHTML = `<span><strong>${room.name}</strong><br><span>${room.category} | ${polygonAreaM2(pts).toFixed(2)}mÂ² | ${perimeterM(pts).toFixed(2)}m</span></span><span>Editar</span>`;
-        card.onclick = () => { state.selectedRoomId = room.id; render(); };
+        card.classList.toggle("selected", room.id === state.selectedRoomId);
+        card.innerHTML = `<button type="button" class="row-card-main"><strong>${room.name}</strong><small>${room.category} | ${polygonAreaM2(pts).toFixed(2)}m² | ${perimeterM(pts).toFixed(2)}m</small></button><span class="row-actions"><button type="button" data-edit-room="${room.id}">Editar</button><button type="button" class="danger" data-delete-room="${room.id}">Excluir</button></span>`;
+        card.querySelector(".row-card-main").onclick = () => {
+          state.selectedRoomId = room.id;
+          state.selectedPointId = null;
+          render();
+        };
         roomsList.appendChild(card);
       });
 
@@ -1325,6 +1483,36 @@
         pointRoom.appendChild(opt);
       });
       if (state.selectedRoomId) pointRoom.value = state.selectedRoomId;
+
+      const roomForWalls = state.project.rooms.find(r => r.id === pointRoom.value) || selectedRoom();
+      const pointWall = $("pointWall");
+      const selectedWallValue = pointWall.value;
+      pointWall.innerHTML = "";
+      if (roomForWalls) {
+        roomSegmentOptions(roomForWalls).forEach(wall => {
+          const opt = document.createElement("option");
+          opt.value = wall.number;
+          opt.textContent = `Parede ${wall.number} (${wall.lengthM.toFixed(2).replace(".", ",")} m)`;
+          pointWall.appendChild(opt);
+        });
+      }
+      if ([...pointWall.options].some(opt => opt.value === selectedWallValue)) pointWall.value = selectedWallValue;
+
+      const pointsList = $("pointsList");
+      pointsList.innerHTML = "";
+      state.project.points.forEach(point => {
+        const room = state.project.rooms.find(r => r.id === point.roomId);
+        const card = document.createElement("div");
+        card.className = "row-card";
+        card.classList.toggle("selected", point.id === state.selectedPointId);
+        card.innerHTML = `<button type="button" class="row-card-main"><strong>${typeLabel(point.type)}</strong><small>${room?.name || "Sem ambiente"} | ${point.power || 0} VA | Circuito ${point.circuit}</small></button><span class="row-actions"><button type="button" data-edit-point="${point.id}">Editar</button><button type="button" class="danger" data-delete-point="${point.id}">Excluir</button></span>`;
+        card.querySelector(".row-card-main").onclick = () => {
+          state.selectedPointId = point.id;
+          state.selectedRoomId = point.roomId || state.selectedRoomId;
+          render();
+        };
+        pointsList.appendChild(card);
+      });
 
       const circuitsBody = $("circuitsTable");
       circuitsBody.innerHTML = "";
@@ -1375,6 +1563,7 @@
       $("projectAddress").value = state.project.address;
       $("designerName").value = state.project.designer;
       $("projectDate").value = state.project.date;
+      $("projectRevision").value = state.project.revision || "";
       $("scaleSelect").value = state.project.scale;
       $("sheetSize").value = state.project.sheet;
     }
@@ -1385,14 +1574,42 @@
       state.project.address = $("projectAddress").value;
       state.project.designer = $("designerName").value;
       state.project.date = $("projectDate").value;
+      state.project.revision = $("projectRevision").value;
       state.project.scale = $("scaleSelect").value;
       state.project.sheet = $("sheetSize").value;
     }
 
-    function openRoomDialog() {
-      const next = state.project.rooms.length + 1;
-      if (!$("roomName").value || /^Quarto \d+$/i.test($("roomName").value)) {
+    function setActiveShape(shape) {
+      let activated = false;
+      document.querySelectorAll(".shape-btn").forEach(btn => {
+        const shouldActivate = !activated && btn.dataset.shape === shape;
+        btn.classList.toggle("active", shouldActivate);
+        if (shouldActivate) activated = true;
+      });
+      updatePreview();
+    }
+
+    function openRoomDialog(roomId = null) {
+      const room = state.project.rooms.find(r => r.id === roomId);
+      state.editingRoomId = room?.id || null;
+      $("roomForm").querySelector(".dialog-title").textContent = room ? "Editar Ambiente" : "Novo Ambiente";
+      if (room) {
+        $("roomName").value = room.name;
+        $("roomCategory").value = room.category;
+        $("measureA").value = room.measures.a;
+        $("measureB").value = room.measures.b;
+        $("measureC").value = room.measures.c || 0;
+        $("measureD").value = room.measures.d || 0;
+        setActiveShape(room.shape || "rect");
+      } else {
+        const next = state.project.rooms.length + 1;
         $("roomName").value = `Quarto ${String(next).padStart(2, "0")}`;
+        $("roomCategory").value = "Quarto";
+        $("measureA").value = 4.35;
+        $("measureB").value = 3.45;
+        $("measureC").value = 2.8;
+        $("measureD").value = 2.55;
+        setActiveShape("rect");
       }
       $("roomDialog").classList.add("open");
       centerDialog($("roomForm"));
@@ -1402,6 +1619,7 @@
 
     function closeRoomDialog() {
       $("roomDialog").classList.remove("open");
+      state.editingRoomId = null;
     }
 
     function centerDialog(dialog) {
@@ -1471,16 +1689,34 @@
       svg.appendChild(t);
     }
 
-    function nextRoomPosition() {
-      const count = state.project.rooms.length;
-      return { x: 90 + (count % 4) * 190, y: 95 + Math.floor(count / 4) * 185 };
+    function nextRoomPosition(measures = { a: 4.35, b: 3.45, c: 0, d: 0 }, shape = "rect") {
+      const selected = selectedRoom();
+      const temp = { x: 0, y: 0, shape, measures };
+      const size = roomBounds(temp);
+      const existing = state.project.rooms.map(roomBounds);
+      const candidates = [];
+      if (selected) {
+        const base = roomBounds(selected);
+        candidates.push({ x: base.maxX + 12, y: base.y });
+        candidates.push({ x: base.x, y: base.maxY + 12 });
+        candidates.push({ x: Math.max(54, base.x - size.width - 12), y: base.y });
+      }
+      for (let y = 70; y <= 590; y += 42) {
+        for (let x = 70; x <= 930; x += 42) candidates.push({ x, y });
+      }
+      return candidates.find(pos => {
+        const box = { x: pos.x, y: pos.y, maxX: pos.x + size.width, maxY: pos.y + size.height };
+        const insideSheet = box.x >= 54 && box.y >= 54 && box.maxX <= 1068 && box.maxY <= 620;
+        return insideSheet && existing.every(other => !overlaps(box, other, 8));
+      }) || { x: 90, y: 90 };
     }
 
     function createRoom(formData) {
       pushHistory();
-      const pos = nextRoomPosition();
+      const editing = state.project.rooms.find(r => r.id === state.editingRoomId);
+      const pos = editing ? { x: editing.x, y: editing.y } : nextRoomPosition(formData.measures, formData.shape);
       const room = {
-        id: uid(),
+        id: editing?.id || uid(),
         name: formData.name,
         category: formData.category,
         shape: formData.shape,
@@ -1489,16 +1725,20 @@
         rotation: 0,
         measures: formData.measures
       };
-      state.project.rooms.push(room);
+      if (editing) {
+        Object.assign(editing, room);
+      } else {
+        state.project.rooms.push(room);
+      }
       state.selectedRoomId = room.id;
+      state.selectedPointId = null;
       render();
-      toast("Ambiente criado.");
+      toast(editing ? "Ambiente atualizado." : "Ambiente criado.");
     }
 
-    function addPointFromForm() {
+    function pointFromForm(preview = false) {
       const room = state.project.rooms.find(r => r.id === $("pointRoom").value);
-      if (!room) return toast("Crie um ambiente primeiro.");
-      pushHistory();
+      if (!room) return null;
       const type = $("pointType").value;
       const wall = Number($("pointWall").value || 1);
       let p;
@@ -1508,8 +1748,8 @@
       } else {
         p = wallPoint(room, wall, Number($("pointOffset").value || 0), Number($("pointInset").value || 0));
       }
-      state.project.points.push({
-        id: uid(),
+      return {
+        id: preview ? "" : (state.editingPointId || uid()),
         roomId: room.id,
         type,
         power: Number($("pointPower").value || 0),
@@ -1519,10 +1759,93 @@
         inset: Number($("pointInset").value || 0),
         x: p.x,
         y: p.y,
-        angle: p.angle
-      });
+        angle: p.angle,
+        preview
+      };
+    }
+
+    function updatePointPreview() {
+      state.previewPoint = pointFromForm(true);
       render();
-      toast("Ponto aplicado.");
+    }
+
+    function addPointFromForm() {
+      const point = pointFromForm(false);
+      if (!point) return toast("Crie um ambiente primeiro.");
+      pushHistory();
+      const editing = state.project.points.find(p => p.id === state.editingPointId);
+      if (editing) {
+        Object.assign(editing, point);
+      } else {
+        state.project.points.push(point);
+      }
+      state.selectedPointId = point.id;
+      state.selectedRoomId = point.roomId;
+      state.editingPointId = null;
+      state.previewPoint = null;
+      render();
+      toast(editing ? "Ponto atualizado." : "Ponto aplicado.");
+    }
+
+    function editPoint(pointId) {
+      const point = state.project.points.find(p => p.id === pointId);
+      if (!point) return;
+      state.editingPointId = point.id;
+      state.selectedPointId = point.id;
+      state.selectedRoomId = point.roomId;
+      $("pointRoom").value = point.roomId;
+      $("pointType").value = point.type;
+      $("pointPower").value = point.power;
+      $("pointCircuit").value = point.circuit;
+      renderLists();
+      $("pointWall").value = point.wall || 1;
+      $("pointOffset").value = point.offset || 0;
+      $("pointInset").value = point.inset || 0;
+      $("addPointBtn").textContent = "Atualizar ponto";
+      showSideSection("points");
+      updatePointPreview();
+    }
+
+    function resetPointForm() {
+      state.editingPointId = null;
+      state.previewPoint = null;
+      $("pointType").value = "outlet";
+      $("pointPower").value = 100;
+      $("pointCircuit").value = 1;
+      $("pointOffset").value = .5;
+      $("pointInset").value = 0;
+      $("addPointBtn").textContent = "Aplicar ponto";
+      updatePointPreview();
+    }
+
+    function deleteRoom(roomId) {
+      const room = state.project.rooms.find(r => r.id === roomId);
+      if (!room || !confirm(`Excluir o ambiente "${room.name}" e seus pontos?`)) return;
+      pushHistory();
+      state.project.rooms = state.project.rooms.filter(r => r.id !== roomId);
+      state.project.openings = state.project.openings.filter(o => o.roomId !== roomId);
+      state.project.points = state.project.points.filter(p => p.roomId !== roomId);
+      state.selectedRoomId = state.project.rooms[0]?.id || null;
+      state.selectedPointId = null;
+      render();
+      toast("Ambiente excluido.");
+    }
+
+    function deletePoint(pointId) {
+      const point = state.project.points.find(p => p.id === pointId);
+      if (!point || !confirm("Excluir este ponto eletrico?")) return;
+      pushHistory();
+      state.project.points = state.project.points.filter(p => p.id !== pointId);
+      state.selectedPointId = null;
+      if (state.editingPointId === pointId) resetPointForm();
+      render();
+      toast("Ponto excluido.");
+    }
+
+    function deleteSelection() {
+      if (state.selectedPointId) return deletePoint(state.selectedPointId);
+      if (state.selectedRoomId) return deleteRoom(state.selectedRoomId);
+      toast("Selecione um ambiente ou ponto para excluir.");
     }
 
     function autoOutlets() {
@@ -1616,7 +1939,7 @@
       const reader = new FileReader();
       reader.onload = () => {
         pushHistory();
-        state.project = JSON.parse(reader.result);
+        state.project = normalizeProject(JSON.parse(reader.result));
         state.fileHandle = handle;
         state.currentFileName = handle?.name || file.name || "";
         state.selectedRoomId = state.project.rooms[0]?.id || null;
@@ -1761,7 +2084,7 @@
 
     function runToolAction(tool) {
       if (tool === "select") {
-        toast("Selecione um ambiente na lista lateral para destacar na planta.");
+        toast("Clique em um ambiente ou ponto na planta para selecionar.");
       } else if (tool === "door") {
         addOpeningQuick("Porta de 1 Folha");
       } else if (tool === "window") {
@@ -1779,6 +2102,8 @@
         document.querySelector('[data-layer="circuits"]').checked = true;
         render();
         toast("Eletrodutos aparecem como linhas entre pontos do mesmo circuito.");
+      } else if (tool === "delete") {
+        deleteSelection();
       }
     }
 
@@ -1820,6 +2145,45 @@
       });
     }
 
+    function applyZoom() {
+      document.querySelector(".sheet").style.zoom = state.zoom;
+      $("statusText").textContent = `Ferramenta: ${document.querySelector(".tool.active")?.textContent.trim() || "Selecionar"} | Zoom ${Math.round(state.zoom * 100)}%`;
+    }
+
+    const stageWrap = document.querySelector(".stage-wrap");
+    stageWrap.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      const oldZoom = state.zoom;
+      const direction = event.deltaY > 0 ? -1 : 1;
+      state.zoom = Math.max(.35, Math.min(2.5, state.zoom + direction * .08));
+      const ratio = state.zoom / oldZoom;
+      stageWrap.scrollLeft = (stageWrap.scrollLeft + event.offsetX) * ratio - event.offsetX;
+      stageWrap.scrollTop = (stageWrap.scrollTop + event.offsetY) * ratio - event.offsetY;
+      applyZoom();
+    }, { passive: false });
+
+    let panning = false;
+    let panStart = null;
+    stageWrap.addEventListener("mousedown", (event) => {
+      if (event.button !== 1) return;
+      event.preventDefault();
+      panning = true;
+      panStart = { x: event.clientX, y: event.clientY, left: stageWrap.scrollLeft, top: stageWrap.scrollTop };
+      stageWrap.style.cursor = "grabbing";
+    });
+
+    window.addEventListener("mousemove", (event) => {
+      if (!panning) return;
+      stageWrap.scrollLeft = panStart.left - (event.clientX - panStart.x);
+      stageWrap.scrollTop = panStart.top - (event.clientY - panStart.y);
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (!panning) return;
+      panning = false;
+      stageWrap.style.cursor = "";
+    });
+
     document.querySelectorAll(".side-tab").forEach(tab => {
       tab.addEventListener("click", () => showSideSection(tab.dataset.sideSection));
     });
@@ -1830,7 +2194,18 @@
       $("sideToggleBtn").title = collapsed ? "Expandir painel lateral" : "Recolher painel lateral";
     });
 
-    ["projectTitle", "clientName", "projectAddress", "designerName", "projectDate", "scaleSelect", "sheetSize"].forEach(id => {
+    document.querySelector(".side-body").addEventListener("click", (event) => {
+      const editRoom = event.target.closest("[data-edit-room]");
+      const deleteRoomBtn = event.target.closest("[data-delete-room]");
+      const editPointBtn = event.target.closest("[data-edit-point]");
+      const deletePointBtn = event.target.closest("[data-delete-point]");
+      if (editRoom) openRoomDialog(editRoom.dataset.editRoom);
+      if (deleteRoomBtn) deleteRoom(deleteRoomBtn.dataset.deleteRoom);
+      if (editPointBtn) editPoint(editPointBtn.dataset.editPoint);
+      if (deletePointBtn) deletePoint(deletePointBtn.dataset.deletePoint);
+    });
+
+    ["projectTitle", "clientName", "projectAddress", "designerName", "projectDate", "projectRevision", "scaleSelect", "sheetSize"].forEach(id => {
       $(id).addEventListener("focus", () => {
         $(id).dataset.beforeValue = $(id).value;
       });
@@ -1841,10 +2216,36 @@
       });
     });
 
+    $("logoInput").addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        pushHistory();
+        state.project.logoDataUrl = reader.result;
+        render();
+        toast("Logo importada.");
+      };
+      reader.readAsDataURL(file);
+    });
+
+    ["pointRoom", "pointType", "pointPower", "pointCircuit", "pointWall", "pointOffset", "pointInset"].forEach(id => {
+      $(id).addEventListener("change", () => {
+        if (id === "pointRoom") {
+          state.selectedRoomId = $("pointRoom").value;
+          renderLists();
+        }
+        updatePointPreview();
+      });
+      $(id).addEventListener("input", () => {
+        if (id !== "pointRoom" && id !== "pointType" && id !== "pointWall") updatePointPreview();
+      });
+    });
+
     $("projectDate").value = state.project.date;
     makeDialogDraggable($("roomForm"), $("roomForm").querySelector(".dialog-head"));
-    $("roomBtn").onclick = openRoomDialog;
-    $("addRoomSmallBtn").onclick = openRoomDialog;
+    $("roomBtn").onclick = () => openRoomDialog();
+    $("addRoomSmallBtn").onclick = () => openRoomDialog();
     $("closeRoomDialog").onclick = closeRoomDialog;
     $("cancelRoom").onclick = closeRoomDialog;
     $("roomForm").onsubmit = (event) => {
@@ -1865,6 +2266,7 @@
     };
 
     $("addPointBtn").onclick = addPointFromForm;
+    $("newPointBtn").onclick = resetPointForm;
     $("autoOutletsBtn").onclick = autoOutlets;
     $("autoLightsBtn").onclick = autoLights;
     $("reportBtn").onclick = showReport;
@@ -1903,12 +2305,18 @@
       const x = (event.clientX - rect.left) * 1122 / rect.width;
       const y = (event.clientY - rect.top) * 794 / rect.height;
       if (state.tool === "panel") {
+        pushHistory();
         state.project.points.push({ id: uid(), roomId: state.selectedRoomId, type: "panel", power: 0, circuit: 1, wall: 0, offset: 0, inset: 0, x, y, angle: 0 });
+        render();
+      } else if (state.tool === "select") {
+        state.selectedPointId = null;
+        state.selectedRoomId = null;
         render();
       }
     });
 
     render();
+    applyZoom();
   </script>
 </body>
 </html>
