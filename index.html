@@ -959,6 +959,7 @@
     const PX = 70;
     const state = {
       fileHandle: null,
+      currentFileName: "",
       tool: "select",
       selectedRoomId: null,
       layers: { rooms: true, openings: true, points: true, labels: true, circuits: true, sheet: true },
@@ -1421,17 +1422,35 @@
       URL.revokeObjectURL(a.href);
     }
 
-    async function saveProject(saveAs = false) {
-      updateFromFields();
-      const text = JSON.stringify(state.project, null, 2);
+    function projectFileName(addDate = false) {
       const base = (state.project.title || "projeto-eletrico")
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "") || "projeto-eletrico";
-      const suffix = saveAs ? `-${new Date().toISOString().slice(0, 10)}` : "";
-      download(`${base}${suffix}.json`, text, "application/json");
+      const suffix = addDate ? `-${new Date().toISOString().slice(0, 10)}` : "";
+      return `${base}${suffix}.json`;
+    }
+
+    async function saveProject(saveAs = false) {
+      updateFromFields();
+      const text = JSON.stringify(state.project, null, 2);
+      if ("showSaveFilePicker" in window) {
+        if (!state.fileHandle || saveAs) {
+          state.fileHandle = await window.showSaveFilePicker({
+            suggestedName: projectFileName(saveAs),
+            types: [{ description: "Projeto EletroPlanta JSON", accept: { "application/json": [".json"] } }]
+          });
+        }
+        const writable = await state.fileHandle.createWritable();
+        await writable.write(text);
+        await writable.close();
+        state.currentFileName = state.fileHandle.name || projectFileName(false);
+        toast(saveAs ? "Projeto salvo como novo arquivo." : "Projeto salvo.");
+        return;
+      }
+      download(projectFileName(saveAs), text, "application/json");
       toast("Projeto baixado em JSON.");
     }
 
@@ -1440,6 +1459,7 @@
       reader.onload = () => {
         state.project = JSON.parse(reader.result);
         state.fileHandle = null;
+        state.currentFileName = file.name || "";
         state.selectedRoomId = state.project.rooms[0]?.id || null;
         render();
         toast("Projeto aberto.");
