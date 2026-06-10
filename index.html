@@ -298,7 +298,7 @@
 
     .tool-stack {
       display: grid;
-      grid-template-columns: repeat(5, 58px);
+      grid-template-columns: repeat(6, 58px);
       gap: 4px;
     }
 
@@ -983,7 +983,7 @@
       }
 
       .tool-stack {
-        grid-template-columns: repeat(5, 54px);
+        grid-template-columns: repeat(6, 54px);
       }
 
       .check-grid {
@@ -1085,12 +1085,12 @@
               <button class="tool" data-tool="door" title="Adiciona uma porta no ambiente selecionado."><span class="tool-icon">D</span>Porta</button>
               <button class="tool" data-tool="window" title="Adiciona uma janela no ambiente selecionado."><span class="tool-icon">J</span>Janela</button>
               <button class="tool" data-tool="outlet" title="Adiciona uma tomada no ambiente selecionado."><span class="tool-icon">T</span>Tomada</button>
+              <button class="tool" data-tool="delete" title="Exclui o ambiente ou ponto selecionado."><span class="tool-icon">X</span>Excluir</button>
               <button class="tool" data-tool="light" title="Adiciona uma luminaria no ambiente selecionado."><span class="tool-icon">L</span>Luz</button>
               <button class="tool" data-tool="switch" title="Adiciona um interruptor no ambiente selecionado."><span class="tool-icon">I</span>Interruptor</button>
               <button class="tool" data-tool="conduit" title="Liga pontos do mesmo circuito com linhas de eletroduto."><span class="tool-icon">E</span>Eletroduto</button>
               <button class="tool" data-tool="panel" title="Adiciona um quadro no ambiente selecionado."><span class="tool-icon">Q</span>Quadro</button>
               <button class="tool" data-tool="wall" title="Desenha um ambiente livre clicando nos pontos das paredes."><span class="tool-icon">P</span>Parede</button>
-              <button class="tool" data-tool="delete" title="Exclui o ambiente ou ponto selecionado."><span class="tool-icon">X</span>Excluir</button>
             </div>
           </div>
           <div class="group-label">Ferramentas de Desenho</div>
@@ -1633,6 +1633,20 @@
       return segments(points).reduce((acc, [[x1, y1], [x2, y2]]) => acc + Math.hypot(x2 - x1, y2 - y1) / PX, 0);
     }
 
+    function formatLengthM(valueM, showUnit = false) {
+      if (state.unit === "cm") {
+        const cm = valueM * 100;
+        const text = Number.isInteger(Math.round(cm)) ? String(Math.round(cm)) : cm.toFixed(1);
+        return showUnit ? `${text}cm` : text;
+      }
+      const text = valueM.toFixed(2);
+      return showUnit ? `${text}m` : text;
+    }
+
+    function formatAreaM2(valueM2) {
+      return `${valueM2.toFixed(2)}m²`;
+    }
+
     function polygonBounds(points) {
       const xs = points.map(p => p[0]);
       const ys = points.map(p => p[1]);
@@ -1717,7 +1731,7 @@
         roomSegmentOptions(target).forEach(wall => {
           const opt = document.createElement("option");
           opt.value = wall.number;
-          opt.textContent = `Parede ${wall.number} (${wall.lengthM.toFixed(2).replace(".", ",")} m)`;
+          opt.textContent = `Parede ${wall.number} (${formatLengthM(wall.lengthM, true)})`;
           attachWall.appendChild(opt);
         });
       }
@@ -1744,7 +1758,7 @@
       roomSegmentOptions(draft).forEach(wall => {
         const opt = document.createElement("option");
         opt.value = wall.number;
-        opt.textContent = `Parede ${wall.number} (${wall.lengthM.toFixed(2).replace(".", ",")} m)`;
+        opt.textContent = `Parede ${wall.number} (${formatLengthM(wall.lengthM, true)})`;
         newRoomWall.appendChild(opt);
       });
       if ([...newRoomWall.options].some(opt => opt.value === previousNewWall)) {
@@ -2034,14 +2048,21 @@
       });
       add("polygon", {
         points: pts.map(p => p.join(",")).join(" "),
-        fill: selected ? "#c8f8c7" : "#fff",
-        stroke: "#b6bec8",
+        fill: selected ? "rgba(185, 246, 190, .28)" : "#fff",
+        stroke: "#c7d0da",
+        "stroke-width": 12,
+        "stroke-linejoin": "miter"
+      }, g);
+      add("polygon", {
+        points: pts.map(p => p.join(",")).join(" "),
+        fill: "transparent",
+        stroke: "#ffffff",
         "stroke-width": 8,
         "stroke-linejoin": "miter"
       }, g);
       add("polygon", {
         points: pts.map(p => p.join(",")).join(" "),
-        fill: selected ? "rgba(123, 222, 134, .34)" : "transparent",
+        fill: "transparent",
         stroke: "#8e99a6",
         "stroke-width": 1.2
       }, g);
@@ -2053,7 +2074,7 @@
       if (state.layers.labels) {
         add("text", { x: cx, y: cy - 4, "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: "#1f2933", "pointer-events": "none" }, g).textContent = room.label || room.name;
         if (room.showArea !== false) {
-          add("text", { x: cx, y: cy + 12, "text-anchor": "middle", "font-size": 11, fill: "#303846", "pointer-events": "none" }, g).textContent = `${area.toFixed(2)}m²`;
+          add("text", { x: cx, y: cy + 12, "text-anchor": "middle", "font-size": 11, fill: "#303846", "pointer-events": "none" }, g).textContent = formatAreaM2(area);
         }
         segments(pts).forEach(([[x1, y1], [x2, y2]], index) => {
           const midX = (x1 + x2) / 2;
@@ -2067,12 +2088,16 @@
             fill: "#384250",
             "pointer-events": "none",
             transform: `rotate(${Math.abs(ang) === 90 ? ang : 0} ${midX} ${midY})`
-          }, g).textContent = len.toFixed(2).replace(".", ",");
+          }, g).textContent = formatLengthM(len);
           if (selected) {
             add("circle", { cx: midX, cy: midY, r: 11, fill: "#fff", stroke: "#147c78", "stroke-width": 1.2, "pointer-events": "none" }, g);
             add("text", { x: midX, y: midY + 4, "text-anchor": "middle", "font-size": 10, "font-weight": 800, fill: "#147c78", "pointer-events": "none" }, g).textContent = index + 1;
           }
         });
+        if (selected) {
+          const ref = pts[0];
+          add("text", { x: ref[0] + 10, y: ref[1] - 12, "font-size": 10, "font-weight": 700, fill: "#6b7280", "pointer-events": "none" }, g).textContent = "Esp. 15cm";
+        }
       }
     }
 
@@ -2186,7 +2211,7 @@
         const card = document.createElement("div");
         card.className = "row-card";
         card.classList.toggle("selected", room.id === state.selectedRoomId);
-        card.innerHTML = `<button type="button" class="row-card-main"><strong>${room.name}</strong><small>${room.category} | ${polygonAreaM2(pts).toFixed(2)}m² | ${perimeterM(pts).toFixed(2)}m</small></button><span class="row-actions"><button type="button" data-edit-room="${room.id}">Editar</button><button type="button" class="danger" data-delete-room="${room.id}">Excluir</button></span>`;
+        card.innerHTML = `<button type="button" class="row-card-main"><strong>${room.name}</strong><small>${room.category} | ${formatAreaM2(polygonAreaM2(pts))} | ${formatLengthM(perimeterM(pts), true)}</small></button><span class="row-actions"><button type="button" data-edit-room="${room.id}">Editar</button><button type="button" class="danger" data-delete-room="${room.id}">Excluir</button></span>`;
         card.querySelector(".row-card-main").onclick = () => {
           state.selectedRoomId = room.id;
           state.selectedPointId = null;
@@ -2213,7 +2238,7 @@
         roomSegmentOptions(roomForWalls).forEach(wall => {
           const opt = document.createElement("option");
           opt.value = wall.number;
-          opt.textContent = `Parede ${wall.number} (${wall.lengthM.toFixed(2).replace(".", ",")} m)`;
+          opt.textContent = `Parede ${wall.number} (${formatLengthM(wall.lengthM, true)})`;
           pointWall.appendChild(opt);
         });
       }
@@ -3168,6 +3193,7 @@
       state.unit = $("unitSelect").value;
       state.project.unit = state.unit;
       applyModelAppearance();
+      render();
       applyZoom();
       toast(`Unidade do modelo: ${state.unit === "cm" ? "centimetros" : "metros"}.`);
     });
