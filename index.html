@@ -1144,10 +1144,15 @@
             <label style="width:130px">Folha
               <select id="sheetSize">
                 <option>A4 Paisagem</option>
+                <option>A4 Retrato</option>
                 <option selected>A3 Paisagem</option>
+                <option>A3 Retrato</option>
                 <option>A2 Paisagem</option>
+                <option>A2 Retrato</option>
                 <option>A1 Paisagem</option>
+                <option>A1 Retrato</option>
                 <option>A0 Paisagem</option>
+                <option>A0 Retrato</option>
               </select>
             </label>
             <label style="width:90px">Escala 1 :
@@ -1418,10 +1423,15 @@
     const PX = 70;
     const SHEET_SIZES = {
       "A4 Paisagem": { width: 794, height: 561 },
+      "A4 Retrato": { width: 561, height: 794 },
       "A3 Paisagem": { width: 1122, height: 794 },
+      "A3 Retrato": { width: 794, height: 1122 },
       "A2 Paisagem": { width: 1587, height: 1122 },
+      "A2 Retrato": { width: 1122, height: 1587 },
       "A1 Paisagem": { width: 2245, height: 1587 },
-      "A0 Paisagem": { width: 3175, height: 2245 }
+      "A1 Retrato": { width: 1587, height: 2245 },
+      "A0 Paisagem": { width: 3175, height: 2245 },
+      "A0 Retrato": { width: 2245, height: 3175 }
     };
     const state = {
       fileHandle: null,
@@ -1789,28 +1799,64 @@
 
     function getSheetLayout() {
       const sheet = getSheetSpec();
-      const outerMargin = Math.round(Math.min(sheet.width, sheet.height) * 0.03);
-      const innerGap = Math.max(8, Math.round(Math.min(sheet.width, sheet.height) * 0.012));
-      const innerMargin = outerMargin + innerGap;
-      const titleWidth = Math.max(320, sheet.width * 0.46);
-      const titleHeight = Math.max(80, sheet.height * 0.14);
-      const revisionHeight = Math.max(70, sheet.height * 0.12);
-      return {
-        sheet,
-        outer: { x: outerMargin, y: outerMargin, width: sheet.width - outerMargin * 2, height: sheet.height - outerMargin * 2 },
-        inner: { x: innerMargin, y: innerMargin, width: sheet.width - innerMargin * 2, height: sheet.height - innerMargin * 2 },
-        title: {
-          x: sheet.width - innerMargin - titleWidth,
-          y: sheet.height - innerMargin - titleHeight,
+      const minSide = Math.min(sheet.width, sheet.height);
+      const isLandscape = sheet.width >= sheet.height;
+      const baseMargin = Math.round(minSide * 0.026);
+      const bindingMargin = Math.round(minSide * 0.07);
+      const outerGap = Math.max(7, Math.round(minSide * 0.01));
+      const outer = {
+        x: isLandscape ? baseMargin : bindingMargin,
+        y: isLandscape ? bindingMargin : baseMargin,
+        width: sheet.width - (isLandscape ? baseMargin * 2 : bindingMargin + baseMargin),
+        height: sheet.height - (isLandscape ? bindingMargin + baseMargin : baseMargin * 2)
+      };
+      const inner = {
+        x: outer.x + outerGap,
+        y: outer.y + outerGap,
+        width: outer.width - outerGap * 2,
+        height: outer.height - outerGap * 2
+      };
+      let title;
+      let revisions;
+      if (isLandscape) {
+        const sideWidth = Math.max(108, sheet.width * 0.125);
+        const titleHeight = inner.height * 0.46;
+        title = {
+          x: inner.x + inner.width - sideWidth,
+          y: inner.y + inner.height - titleHeight,
+          width: sideWidth,
+          height: titleHeight
+        };
+        revisions = {
+          x: title.x,
+          y: inner.y,
+          width: sideWidth,
+          height: inner.height - titleHeight
+        };
+      } else {
+        const titleWidth = Math.max(320, inner.width * 0.72);
+        const titleHeight = Math.max(84, sheet.height * 0.12);
+        const revisionHeight = Math.max(72, sheet.height * 0.10);
+        title = {
+          x: inner.x + inner.width - titleWidth,
+          y: inner.y + inner.height - titleHeight,
           width: titleWidth,
           height: titleHeight
-        },
-        revisions: {
-          x: sheet.width - innerMargin - titleWidth,
-          y: sheet.height - innerMargin - titleHeight - revisionHeight,
+        };
+        revisions = {
+          x: title.x,
+          y: title.y - revisionHeight,
           width: titleWidth,
           height: revisionHeight
-        }
+        };
+      }
+      return {
+        sheet,
+        isLandscape,
+        outer,
+        inner,
+        title,
+        revisions
       };
     }
 
@@ -1824,17 +1870,17 @@
 
     function drawRevisionBlock() {
       const p = state.project;
-      const { revisions } = getSheetLayout();
+      const { revisions, isLandscape } = getSheetLayout();
       const x = revisions.x;
       const y = revisions.y;
       const w = revisions.width;
       const h = revisions.height;
-      const scale = Math.max(.9, w / 520);
-      const headerH = Math.max(18, h * .2);
-      const footerH = Math.max(16, h * .18);
+      const scale = isLandscape ? Math.max(.75, w / 150) : Math.max(.9, w / 520);
+      const headerH = Math.max(18, h * (isLandscape ? .12 : .2));
+      const footerH = Math.max(16, h * (isLandscape ? .12 : .18));
       const rowTop = y + headerH;
-      const colRev = x + w * .14;
-      const colData = x + w * .82;
+      const colRev = x + w * (isLandscape ? .22 : .14);
+      const colData = x + w * (isLandscape ? .78 : .82);
       const label = (text, tx, ty, size = 7.5) => add("text", { x: tx, y: ty, "font-size": size * scale, "font-weight": 800, fill: "#222" }).textContent = text;
       const value = (text, tx, ty, size = 7) => add("text", { x: tx, y: ty, "font-size": size * scale, fill: "#1f2933" }).textContent = text || "";
       add("line", { x1: x, y1: y + headerH, x2: x + w, y2: y + headerH, stroke: "#d1d7df", "stroke-width": 1 });
@@ -1845,19 +1891,75 @@
       label("REV.", x + 8, y + h - footerH * .36, 6.5);
       label("DESCRIÇÃO", colRev + 8, y + h - footerH * .36, 6.5);
       label("DATA", colData + 8, y + h - footerH * .36, 6.5);
-      const lines = String(p.modifications || "").split(/\n+/).map(item => item.trim()).filter(Boolean).slice(0, 4);
+      const lines = String(p.modifications || "").split(/\n+/).map(item => item.trim()).filter(Boolean).slice(0, isLandscape ? 8 : 4);
       lines.forEach((line, index) => {
-        const ty = rowTop + 17 * scale + index * 15 * scale;
+        const ty = rowTop + 17 * scale + index * (isLandscape ? 13 : 15) * scale;
         const match = line.match(/^(rev\.?\s*\d+|r\d+|\d+)\s*[-–:]?\s*(.*)$/i);
         value(match ? match[1].replace(/^rev\.?\s*/i, "") : String(index + 1).padStart(2, "0"), x + 10, ty, 6.6);
         value(match ? match[2] : line, colRev + 8, ty, 6.6);
       });
     }
 
+    function drawVerticalTitleBlock() {
+      const p = state.project;
+      const { title } = getSheetLayout();
+      const x = title.x;
+      const y = title.y;
+      const w = title.width;
+      const h = title.height;
+      const scale = Math.max(.75, w / 150);
+      const line = (yPos) => add("line", { x1: x, y1: yPos, x2: x + w, y2: yPos, stroke: "#d1d7df", "stroke-width": 1 });
+      const label = (text, tx, ty, size = 6.4) => add("text", { x: tx, y: ty, "font-size": size * scale, "font-weight": 800, fill: "#222" }).textContent = text;
+      const value = (text, tx, ty, size = 7.2, weight = 600, anchor = "start") => add("text", { x: tx, y: ty, "font-size": size * scale, "font-weight": weight, fill: "#1f2933", "text-anchor": anchor }).textContent = text || "";
+      const logoH = h * .25;
+      const companyH = h * .19;
+      const infoH = h * .34;
+      const sheetH = h - logoH - companyH - infoH;
+      const yCompany = y + logoH;
+      const yInfo = yCompany + companyH;
+      const ySheet = yInfo + infoH;
+      line(yCompany);
+      line(yInfo);
+      line(ySheet);
+      if (p.logoDataUrl) {
+        add("image", { x: x + w * .12, y: y + h * .04, width: w * .76, height: logoH * .62, href: p.logoDataUrl, preserveAspectRatio: "xMidYMid meet" });
+      } else {
+        value(p.companyName || "EMPRESA", x + w / 2, y + logoH * .48, 14, 800, "middle");
+      }
+      value(p.companyName || "", x + 10 * scale, yCompany + companyH * .24, 7.4, 800);
+      value(p.companyContact || "", x + 10 * scale, yCompany + companyH * .52, 6.2, 500);
+      value(p.companyAddress || "", x + 10 * scale, yCompany + companyH * .80, 6.2, 500);
+      const fields = [
+        ["PROJETO:", p.title || "Planta Eletrica Residencial"],
+        ["CLIENTE:", p.client || ""],
+        ["ENDEREÇO:", p.address || ""],
+        ["RESP.:", p.designer || ""],
+        ["DATA:", p.date || ""],
+        ["ESCALA:", p.scale || ""]
+      ];
+      fields.forEach(([name, val], index) => {
+        const yy = yInfo + 14 * scale + index * (infoH / 6);
+        label(name, x + 8 * scale, yy);
+        value(val, x + 58 * scale, yy, 6.4, index === 0 ? 700 : 500);
+      });
+      const sheetParts = String(p.sheetNumber || "01/01").split("/");
+      const revisionText = String(p.revision || "").replace(/^rev\.?\s*/i, "");
+      label("PRANCHA:", x + 8 * scale, ySheet + sheetH * .18);
+      value(sheetParts[0] || "01", x + w * .18, ySheet + sheetH * .58, 30, 800);
+      value("/", x + w * .58, ySheet + sheetH * .70, 16, 700);
+      value(sheetParts[1] || "01", x + w * .72, ySheet + sheetH * .76, 12, 700);
+      label("REVISÃO:", x + 8 * scale, ySheet + sheetH * .92);
+      value(revisionText, x + 58 * scale, ySheet + sheetH * .92, 7, 700);
+    }
+
     function drawTitleBlock() {
       drawRevisionBlock();
       const p = state.project;
-      const { title } = getSheetLayout();
+      const { title, isLandscape } = getSheetLayout();
+      if (isLandscape) {
+        drawVerticalTitleBlock();
+        return;
+      }
       const x = title.x;
       const y = title.y;
       const w = title.width;
