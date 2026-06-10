@@ -1009,10 +1009,22 @@
     }
 
     @media print {
-      body { background: white; overflow: visible; }
+      html, body { background: white; overflow: visible; margin: 0 !important; padding: 0 !important; }
       .titlebar, .ribbon, .side, .canvas-top { display: none; }
-      .app, .workspace, .canvas-shell, .stage-wrap { display: block; height: auto; overflow: visible; padding: 0; }
-      .sheet { box-shadow: none; border: 0; margin: 0; width: 100vw; min-width: 0; height: 70.77vw; aspect-ratio: auto; }
+      .app, .workspace, .canvas-shell, .stage-wrap { display: block; width: auto; height: auto; overflow: visible; padding: 0; margin: 0; }
+      .sheet {
+        box-shadow: none !important;
+        border: 0 !important;
+        margin: 0 !important;
+        min-width: 0 !important;
+        transform: none !important;
+        zoom: 1 !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      #drawing { width: 100% !important; height: 100% !important; }
     }
   </style>
 </head>
@@ -1422,16 +1434,16 @@
     const NS = "http://www.w3.org/2000/svg";
     const PX = 70;
     const SHEET_SIZES = {
-      "A4 Paisagem": { width: 794, height: 561 },
-      "A4 Retrato": { width: 561, height: 794 },
-      "A3 Paisagem": { width: 1122, height: 794 },
-      "A3 Retrato": { width: 794, height: 1122 },
-      "A2 Paisagem": { width: 1587, height: 1122 },
-      "A2 Retrato": { width: 1122, height: 1587 },
-      "A1 Paisagem": { width: 2245, height: 1587 },
-      "A1 Retrato": { width: 1587, height: 2245 },
-      "A0 Paisagem": { width: 3175, height: 2245 },
-      "A0 Retrato": { width: 2245, height: 3175 }
+      "A4 Paisagem": { width: 794, height: 561, mmW: 297, mmH: 210 },
+      "A4 Retrato": { width: 561, height: 794, mmW: 210, mmH: 297 },
+      "A3 Paisagem": { width: 1122, height: 794, mmW: 420, mmH: 297 },
+      "A3 Retrato": { width: 794, height: 1122, mmW: 297, mmH: 420 },
+      "A2 Paisagem": { width: 1587, height: 1122, mmW: 594, mmH: 420 },
+      "A2 Retrato": { width: 1122, height: 1587, mmW: 420, mmH: 594 },
+      "A1 Paisagem": { width: 2245, height: 1587, mmW: 841, mmH: 594 },
+      "A1 Retrato": { width: 1587, height: 2245, mmW: 594, mmH: 841 },
+      "A0 Paisagem": { width: 3175, height: 2245, mmW: 1189, mmH: 841 },
+      "A0 Retrato": { width: 2245, height: 3175, mmW: 841, mmH: 1189 }
     };
     const state = {
       fileHandle: null,
@@ -1809,6 +1821,33 @@
 
     function getSheetSpec() {
       return SHEET_SIZES[state.project.sheet] || SHEET_SIZES["A3 Paisagem"];
+    }
+
+    function updatePrintPageStyle() {
+      const sheet = getSheetSpec();
+      let style = document.getElementById("dynamicPrintPage");
+      if (!style) {
+        style = document.createElement("style");
+        style.id = "dynamicPrintPage";
+        document.head.appendChild(style);
+      }
+      style.textContent = `
+        @page {
+          size: ${sheet.mmW}mm ${sheet.mmH}mm;
+          margin: 0;
+        }
+        @media print {
+          html, body {
+            width: ${sheet.mmW}mm !important;
+            height: ${sheet.mmH}mm !important;
+          }
+          .sheet {
+            width: ${sheet.mmW}mm !important;
+            height: ${sheet.mmH}mm !important;
+            aspect-ratio: ${sheet.mmW} / ${sheet.mmH} !important;
+          }
+        }
+      `;
     }
 
     function getSheetLayout() {
@@ -2856,6 +2895,10 @@
         exportPpt();
       } else if (format === "pdf") {
         updateFromFields();
+        state.workspaceMode = "print";
+        applyModelAppearance();
+        render();
+        updatePrintPageStyle();
         window.print();
       }
     }
@@ -3142,6 +3185,7 @@
       $("modelTheme").value = state.modelTheme;
       $("unitSelect").value = state.unit;
       const sheet = getSheetSpec();
+      updatePrintPageStyle();
       drawing.setAttribute("viewBox", state.workspaceMode === "model" ? "-220 -180 2200 1400" : `0 0 ${sheet.width} ${sheet.height}`);
       const sheetEl = document.querySelector(".sheet");
       if (state.workspaceMode === "print") {
