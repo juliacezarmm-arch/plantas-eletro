@@ -817,6 +817,21 @@
       display: none;
     }
 
+    .category-controls {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: end;
+      padding: 10px;
+      border: 1px solid #e1e7ee;
+      border-radius: 6px;
+      background: white;
+    }
+
+    .category-controls button {
+      white-space: nowrap;
+    }
+
     .nudge-panel {
       display: grid;
       grid-template-columns: 150px minmax(0, 1fr);
@@ -945,7 +960,7 @@
     }
 
     .preview-box {
-      min-height: 170px;
+      min-height: 222px;
       border: 1px solid #dde3eb;
       border-radius: 6px;
       background: white;
@@ -1340,7 +1355,6 @@
           <div class="room-nav">
             <button type="button" class="room-tab active" data-room-page="name">Nome</button>
             <button type="button" class="room-tab" data-room-page="dimensions">Dimensoes</button>
-            <button type="button" class="room-tab" data-room-page="walls">Paredes</button>
             <button type="button" class="room-tab" data-room-page="position">Posicionamento</button>
             <button type="button" class="room-tab" data-room-page="label">Etiqueta</button>
           </div>
@@ -1359,6 +1373,10 @@
                     <option>Varanda</option>
                   </select>
                 </label>
+              </div>
+              <div class="category-controls">
+                <label>Nova categoria <input id="newCategoryName" placeholder="Ex.: Consultorio, Recepcao, Enfermaria"></label>
+                <button type="button" id="addCategoryBtn">Adicionar categoria</button>
               </div>
             </section>
 
@@ -1383,7 +1401,7 @@
                 <div>
                   <div class="preview-title">Escolha a forma e dimensione o ambiente</div>
                   <div class="preview-box">
-                    <svg id="roomPreview" width="300" height="160" viewBox="0 0 300 160"></svg>
+                    <svg id="roomPreview" width="360" height="210" viewBox="-32 -28 364 220"></svg>
                   </div>
                   <div class="cols-2" style="margin-top:12px">
                     <label>A largura m <input id="measureA" type="number" step="0.05" value="4.35"></label>
@@ -1494,6 +1512,8 @@
       editingRoomId: null,
       editingPointId: null,
       previewPoint: null,
+      previewRoom: null,
+      placementTargetId: null,
       wallDraft: [],
       zoom: 1,
       workspaceMode: "model",
@@ -1521,6 +1541,7 @@
         customScale: 50,
         unit: "m",
         sheet: "A3 Paisagem",
+        roomCategories: ["Quarto", "Banheiro", "Sala", "Cozinha", "Corredor", "Lavanderia", "Varanda", "Consultorio", "Recepcao", "Sala de exames", "Enfermaria", "Deposito", "Area tecnica"],
         rooms: [],
         openings: [],
         points: []
@@ -1553,10 +1574,14 @@
         customScale: 50,
         unit: "m",
         sheet: "A3 Paisagem",
+        roomCategories: ["Quarto", "Banheiro", "Sala", "Cozinha", "Corredor", "Lavanderia", "Varanda", "Consultorio", "Recepcao", "Sala de exames", "Enfermaria", "Deposito", "Area tecnica"],
         rooms: [],
         openings: [],
         points: [],
         ...project,
+        roomCategories: Array.isArray(project?.roomCategories) && project.roomCategories.length
+          ? project.roomCategories
+          : ["Quarto", "Banheiro", "Sala", "Cozinha", "Corredor", "Lavanderia", "Varanda", "Consultorio", "Recepcao", "Sala de exames", "Enfermaria", "Deposito", "Area tecnica"],
         rooms: Array.isArray(project?.rooms) ? project.rooms : [],
         openings: Array.isArray(project?.openings) ? project.openings : [],
         points: Array.isArray(project?.points) ? project.points : []
@@ -1575,6 +1600,8 @@
       state.editingRoomId = null;
       state.editingPointId = null;
       state.previewPoint = null;
+      state.previewRoom = null;
+      state.placementTargetId = null;
       state.wallDraft = [];
       render();
     }
@@ -1809,11 +1836,13 @@
       }
 
       newRoomWall.innerHTML = "";
-      const shape = document.querySelector(".shape-btn.active")?.dataset.shape || "rect";
+      const activeShape = document.querySelector(".shape-btn.active");
+      const shape = activeShape?.dataset.shape || "rect";
       const draft = {
         x: 0,
         y: 0,
         shape,
+        variant: activeShape?.dataset.preset || shape,
         rotation: Number($("roomRotation").value || 0),
         measures: {
           a: Number($("measureA").value) || 0,
@@ -1866,6 +1895,7 @@
       if (state.layers.rooms) state.project.rooms.forEach(drawRoom);
       if (state.layers.rooms) drawMasonryWalls();
       if (state.layers.rooms) state.project.rooms.forEach(drawRoomAnnotations);
+      if (state.layers.rooms && state.previewRoom) drawPreviewRoom();
       drawWallDraft();
       if (state.layers.openings) state.project.openings.forEach(drawOpening);
       if (state.layers.circuits) drawCircuitLines();
@@ -2196,6 +2226,56 @@
         const ref = pts[0];
         add("text", { x: ref[0] + 10, y: ref[1] - 12, "font-size": 10, "font-weight": 700, fill: "#6b7280" }, g).textContent = "Esp. 15cm";
       }
+    }
+
+    function drawWallNumbersForRoom(room, options = {}) {
+      const pts = roomPolygon(room);
+      const color = options.color || "#147c78";
+      const g = add("g", { "data-wall-numbers": room.id, "pointer-events": "none" });
+      segments(pts).forEach((seg, index) => {
+        const mid = segmentMidpoint(seg);
+        add("circle", {
+          cx: mid.x,
+          cy: mid.y,
+          r: options.radius || 12,
+          fill: "#fff",
+          stroke: color,
+          "stroke-width": 1.4
+        }, g);
+        add("text", {
+          x: mid.x,
+          y: mid.y + 4,
+          "text-anchor": "middle",
+          "font-size": 10,
+          "font-weight": 800,
+          fill: color
+        }, g).textContent = index + 1;
+      });
+    }
+
+    function drawPreviewRoom() {
+      const room = state.previewRoom;
+      const pts = roomPolygon(room);
+      const target = state.project.rooms.find(r => r.id === state.placementTargetId);
+      if (target) drawWallNumbersForRoom(target, { color: "#275d9f" });
+      const g = add("g", { "data-preview-room": "true", "pointer-events": "none" });
+      add("polygon", {
+        points: pts.map(p => p.join(",")).join(" "),
+        fill: "rgba(185, 246, 190, .38)",
+        stroke: "#147c78",
+        "stroke-width": 2,
+        "stroke-dasharray": "8 5"
+      }, g);
+      drawWallNumbersForRoom(room, { color: "#147c78" });
+      const labelPoint = polygonCentroid(pts);
+      add("text", {
+        x: labelPoint.x,
+        y: labelPoint.y,
+        "text-anchor": "middle",
+        "font-size": 12,
+        "font-weight": 800,
+        fill: "#075652"
+      }, g).textContent = room.name || "Novo ambiente";
     }
 
     function normalizeWallSegment(seg) {
@@ -2539,6 +2619,36 @@
       updatePreview();
     }
 
+    function ensureRoomCategoryOptions(selected = "") {
+      const select = $("roomCategory");
+      const current = selected || select.value || "Quarto";
+      select.innerHTML = "";
+      state.project.roomCategories.forEach(category => {
+        const opt = document.createElement("option");
+        opt.value = category;
+        opt.textContent = category;
+        select.appendChild(opt);
+      });
+      if (!state.project.roomCategories.includes(current)) {
+        state.project.roomCategories.push(current);
+        return ensureRoomCategoryOptions(current);
+      }
+      select.value = current;
+    }
+
+    function addRoomCategory() {
+      const input = $("newCategoryName");
+      const category = input.value.trim();
+      if (!category) return toast("Digite o nome da categoria.");
+      if (!state.project.roomCategories.includes(category)) {
+        pushHistory();
+        state.project.roomCategories.push(category);
+      }
+      ensureRoomCategoryOptions(category);
+      input.value = "";
+      toast("Categoria adicionada.");
+    }
+
     function applyShapePreset(preset) {
       const presets = {
         rect: { a: 4.35, b: 3.45, c: 2.8, d: 2.55 },
@@ -2560,12 +2670,73 @@
       $("measureD").value = values.d;
     }
 
+    function activeRoomPage() {
+      return document.querySelector(".room-tab.active")?.dataset.roomPage || "name";
+    }
+
+    function roomFormData() {
+      const activeShape = document.querySelector(".shape-btn.active");
+      const shape = activeShape?.dataset.shape || "rect";
+      return {
+        id: state.editingRoomId || "__preview_room",
+        name: $("roomName").value || "Novo ambiente",
+        category: $("roomCategory").value,
+        shape,
+        variant: activeShape?.dataset.preset || shape,
+        rotation: Number($("roomRotation").value || 0),
+        attachRoomId: $("attachRoom").value,
+        attachWall: Number($("attachWall").value || 1),
+        newWall: Number($("newRoomWall").value || 1),
+        attachOffset: Number($("attachOffset").value || 0),
+        label: $("roomLabelText").value.trim(),
+        showArea: $("roomShowArea").value !== "no",
+        measures: {
+          a: Number($("measureA").value),
+          b: Number($("measureB").value),
+          c: Number($("measureC").value),
+          d: Number($("measureD").value)
+        }
+      };
+    }
+
+    function updateRoomPlacementPreview() {
+      const data = roomFormData();
+      state.placementTargetId = activeRoomPage() === "position" ? data.attachRoomId : null;
+      if (state.editingRoomId || activeRoomPage() !== "position") {
+        state.previewRoom = null;
+        render();
+        return;
+      }
+      const attachedPos = attachRoomPosition(data);
+      const pos = state.previewRoom && !attachedPos
+        ? { x: state.previewRoom.x, y: state.previewRoom.y }
+        : (attachedPos || nextRoomPosition(data.measures, data.shape, data.variant));
+      state.previewRoom = {
+        id: "__preview_room",
+        name: data.name,
+        category: data.category,
+        shape: data.shape,
+        variant: data.variant,
+        x: pos.x,
+        y: pos.y,
+        rotation: data.rotation,
+        measures: data.measures,
+        label: data.label,
+        showArea: data.showArea
+      };
+      render();
+    }
+
+
     function openRoomDialog(roomId = null) {
       const room = state.project.rooms.find(r => r.id === roomId);
       state.editingRoomId = room?.id || null;
+      state.previewRoom = null;
+      state.placementTargetId = null;
       $("roomForm").querySelector(".dialog-title").textContent = room ? "Editar Ambiente" : "Novo Ambiente";
       document.querySelectorAll(".room-tab").forEach(tab => tab.classList.toggle("active", tab.dataset.roomPage === "name"));
       document.querySelectorAll(".room-page").forEach(page => page.classList.toggle("hidden", page.dataset.page !== "name"));
+      ensureRoomCategoryOptions(room?.category || "Quarto");
       if (room) {
         $("roomName").value = room.name;
         $("roomCategory").value = room.category;
@@ -2581,7 +2752,7 @@
       } else {
         const next = state.project.rooms.length + 1;
         $("roomName").value = `Quarto ${String(next).padStart(2, "0")}`;
-        $("roomCategory").value = "Quarto";
+        ensureRoomCategoryOptions("Quarto");
         $("measureA").value = 4.35;
         $("measureB").value = 3.45;
         $("measureC").value = 2.8;
@@ -2603,6 +2774,9 @@
     function closeRoomDialog() {
       $("roomDialog").classList.remove("open");
       state.editingRoomId = null;
+      state.previewRoom = null;
+      state.placementTargetId = null;
+      render();
     }
 
     function centerDialog(dialog) {
@@ -2716,6 +2890,7 @@
       }
       updateWallPreview();
       populateRoomPositionFields();
+      if ($("roomDialog").classList.contains("open")) updateRoomPlacementPreview();
     }
 
     function updateWallPreview() {
@@ -2797,7 +2972,9 @@
       pushHistory();
       const editing = state.project.rooms.find(r => r.id === state.editingRoomId);
       const attachedPos = attachRoomPosition(formData);
-      const pos = editing ? { x: editing.x, y: editing.y } : (attachedPos || nextRoomPosition(formData.measures, formData.shape, formData.variant));
+      const pos = editing
+        ? { x: editing.x, y: editing.y }
+        : (state.previewRoom ? { x: state.previewRoom.x, y: state.previewRoom.y } : (attachedPos || nextRoomPosition(formData.measures, formData.shape, formData.variant)));
       const room = {
         id: editing?.id || uid(),
         name: formData.name,
@@ -2819,6 +2996,8 @@
       }
       state.selectedRoomId = room.id;
       state.selectedPointId = null;
+      state.previewRoom = null;
+      state.placementTargetId = null;
       render();
       toast(editing ? "Ambiente atualizado." : "Ambiente criado.");
     }
@@ -3135,7 +3314,7 @@
     }
 
     function activePositionRoom() {
-      return state.project.rooms.find(r => r.id === state.editingRoomId) || selectedRoom();
+      return state.previewRoom || state.project.rooms.find(r => r.id === state.editingRoomId) || selectedRoom();
     }
 
     function nudgeActiveRoom(dx, dy) {
@@ -3146,10 +3325,10 @@
       }
       const stepCm = Math.max(1, Number($("positionStepCm")?.value) || 15);
       const stepPx = stepCm / 100 * PX;
-      pushHistory();
+      if (room !== state.previewRoom) pushHistory();
       room.x += dx * stepPx;
       room.y += dy * stepPx;
-      state.selectedRoomId = room.id;
+      if (room !== state.previewRoom) state.selectedRoomId = room.id;
       render();
       toast(`Ambiente movido ${stepCm} cm.`);
     }
@@ -3160,9 +3339,9 @@
       if ($("positionAngle")) $("positionAngle").value = normalized;
       if ($("roomRotation") && [0, 90, 180, 270].includes(normalized)) $("roomRotation").value = String(normalized);
       if (!room) return;
-      pushHistory();
+      if (room !== state.previewRoom) pushHistory();
       room.rotation = normalized;
-      state.selectedRoomId = room.id;
+      if (room !== state.previewRoom) state.selectedRoomId = room.id;
       render();
       toast(`Rotacao ajustada para ${normalized} graus.`);
     }
@@ -3332,12 +3511,24 @@
       });
     });
 
+    $("addCategoryBtn").addEventListener("click", addRoomCategory);
+    $("newCategoryName").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        addRoomCategory();
+      }
+    });
+
     document.querySelectorAll("[data-nudge-room]").forEach(btn => {
       btn.addEventListener("click", () => {
         const [dx, dy] = btn.dataset.nudgeRoom.split(",").map(Number);
         if (dx === 0 && dy === 0) {
           const room = activePositionRoom();
           if (!room) return toast("Selecione um ambiente para centralizar.");
+          if (room === state.previewRoom) {
+            render();
+            return;
+          }
           state.selectedRoomId = room.id;
           render();
           return;
@@ -3358,7 +3549,7 @@
       else updatePreview();
     });
 
-    ["measureA", "measureB", "measureC", "measureD", "roomRotation", "attachRoom"].forEach(id => {
+    ["roomName", "roomCategory", "measureA", "measureB", "measureC", "measureD", "roomRotation", "attachRoom", "attachWall", "newRoomWall", "attachOffset", "roomLabelText", "roomShowArea"].forEach(id => {
       $(id).addEventListener("input", updatePreview);
       $(id).addEventListener("change", updatePreview);
     });
@@ -3555,27 +3746,7 @@
     $("cancelRoom").onclick = closeRoomDialog;
     $("roomForm").onsubmit = (event) => {
       event.preventDefault();
-      const activeShape = document.querySelector(".shape-btn.active");
-      const shape = activeShape?.dataset.shape || "rect";
-      createRoom({
-        name: $("roomName").value,
-        category: $("roomCategory").value,
-        shape,
-        variant: activeShape?.dataset.preset || shape,
-        rotation: Number($("roomRotation").value || 0),
-        attachRoomId: $("attachRoom").value,
-        attachWall: Number($("attachWall").value || 1),
-        newWall: Number($("newRoomWall").value || 1),
-        attachOffset: Number($("attachOffset").value || 0),
-        label: $("roomLabelText").value.trim(),
-        showArea: $("roomShowArea").value !== "no",
-        measures: {
-          a: Number($("measureA").value),
-          b: Number($("measureB").value),
-          c: Number($("measureC").value),
-          d: Number($("measureD").value)
-        }
-      });
+      createRoom(roomFormData());
       closeRoomDialog();
     };
 
